@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { fetchFeedback, type Feedback } from "@/lib/feedbackDb";
+import { DEFAULT_GATE_CS_TEMPLATE, saveGatePlannerTemplate, loadGatePlannerTemplate, type SubjectTemplate, type ChapterTemplate } from "@/lib/gatePlannerDb";
 
 const FEATURES = ["All","General","Goal Planner","Habit Tracker","Battle Manual","UI/Design","Performance"];
 
@@ -13,6 +14,49 @@ export default function AdminPage() {
   const [authed, setAuthed]   = useState(false);
   const [pass, setPass]       = useState("");
   const [passErr, setPassErr] = useState(false);
+
+  const [adminTab, setAdminTab] = useState<'feedback'|'gate'>('feedback');
+  const [gateTemplate, setGateTemplate] = useState<SubjectTemplate[]>([]);
+  const [expandedGateSubs, setExpandedGateSubs] = useState<Set<number>>(new Set());
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState('');
+  const [showAddSub, setShowAddSub] = useState(false);
+  const [newSubName, setNewSubName] = useState("");
+  const [newSubColor, setNewSubColor] = useState("#C36BFF");
+  const [newChapterName, setNewChapterName] = useState<{[key:number]:string}>({});
+
+  useEffect(() => {
+    if (authed && adminTab === 'gate' && gateTemplate.length === 0) {
+      loadGatePlannerTemplate('gate-cs').then(res => {
+        if (res) setGateTemplate(res);
+        else setGateTemplate(DEFAULT_GATE_CS_TEMPLATE);
+      });
+    }
+  }, [authed, adminTab]);
+
+  const handleSaveGateTemplate = async () => {
+    setSaving(true);
+    setSaveMsg('');
+    try {
+      const { error } = await saveGatePlannerTemplate('gate-cs', gateTemplate);
+      if (error) {
+        setSaveMsg('❌ Error saving: ' + error.message);
+      } else {
+        setSaveMsg('✅ Saved successfully!');
+      }
+    } catch (e: any) {
+      setSaveMsg('❌ Error saving');
+    }
+    setSaving(false);
+    setTimeout(() => setSaveMsg(''), 4000);
+  };
+  
+  const handleAddSubject = () => {
+    if (!newSubName.trim()) return;
+    setGateTemplate([...gateTemplate, { name: newSubName, color: newSubColor, chapters: [] }]);
+    setNewSubName("");
+    setShowAddSub(false);
+  };
 
   // Simple password gate — change this to your own password
   const ADMIN_PASS = "lifestack2026";
@@ -98,6 +142,18 @@ export default function AdminPage() {
 
       <div style={{ maxWidth:1100, margin:"0 auto", padding:"24px 20px" }}>
 
+        {/* Tabs */}
+        <div style={{ display:"flex", gap:10, marginBottom:24 }}>
+          <button onClick={() => setAdminTab('feedback')} style={{ padding:"8px 20px", borderRadius:100, border:"none", background: adminTab === 'feedback' ? "linear-gradient(135deg,#FF6A00,#C36BFF)" : "rgba(255,255,255,0.05)", color: adminTab === 'feedback' ? "#fff" : "rgba(255,255,255,0.5)", fontFamily:"'Poppins',sans-serif", fontSize:"0.85rem", fontWeight:700, cursor:"pointer", transition:"all 0.2s" }}>
+            📊 Feedback
+          </button>
+          <button onClick={() => setAdminTab('gate')} style={{ padding:"8px 20px", borderRadius:100, border:"none", background: adminTab === 'gate' ? "linear-gradient(135deg,#FF6A00,#C36BFF)" : "rgba(255,255,255,0.05)", color: adminTab === 'gate' ? "#fff" : "rgba(255,255,255,0.5)", fontFamily:"'Poppins',sans-serif", fontSize:"0.85rem", fontWeight:700, cursor:"pointer", transition:"all 0.2s" }}>
+            🎓 GATE Planner
+          </button>
+        </div>
+
+        {adminTab === 'feedback' && (
+          <>
         {/* Stats row */}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))", gap:12, marginBottom:28 }}>
           {[
@@ -191,6 +247,140 @@ export default function AdminPage() {
             )}
           </div>
         </div>
+        </>
+        )}
+
+        {adminTab === 'gate' && (
+          <div style={{ animation:"fadeUp 0.3s ease both" }}>
+            {/* stats */}
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:14, padding:"16px 20px", flexWrap:"wrap", gap:16 }}>
+              <div style={{ display:"flex", gap:32 }}>
+                <div>
+                  <div style={{ fontFamily:"'Poppins',sans-serif", fontSize:"0.7rem", color:"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"0.05em", fontWeight:600 }}>Total Subjects</div>
+                  <div style={{ fontFamily:"'Poppins',sans-serif", fontSize:"1.6rem", fontWeight:800, color:"#fff" }}>{gateTemplate.length}</div>
+                </div>
+                <div>
+                  <div style={{ fontFamily:"'Poppins',sans-serif", fontSize:"0.7rem", color:"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"0.05em", fontWeight:600 }}>Total Chapters</div>
+                  <div style={{ fontFamily:"'Poppins',sans-serif", fontSize:"1.6rem", fontWeight:800, color:"#fff" }}>{gateTemplate.reduce((a,c) => a + c.chapters.length, 0)}</div>
+                </div>
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                {saveMsg && <span style={{ fontFamily:"'Poppins',sans-serif", fontSize:"0.8rem", color:saveMsg==='✅ Saved successfully!'?"#4ade80":"#f87171" }}>{saveMsg}</span>}
+                <button onClick={handleSaveGateTemplate} disabled={saving} style={{ background:"linear-gradient(135deg,#FF6A00,#C36BFF)", border:"none", borderRadius:10, color:"#fff", padding:"10px 24px", cursor:"pointer", fontFamily:"'Poppins',sans-serif", fontSize:"0.85rem", fontWeight:700, opacity:saving?0.7:1 }}>
+                  {saving ? "Saving..." : "💾 Save Template"}
+                </button>
+              </div>
+            </div>
+
+            {/* list */}
+            <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+              {gateTemplate.map((sub, i) => (
+                <div key={i} style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:14, overflow:"hidden" }}>
+                  <div style={{ padding:"16px 20px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer" }} onClick={() => {
+                    const next = new Set(expandedGateSubs);
+                    if (next.has(i)) next.delete(i);
+                    else next.add(i);
+                    setExpandedGateSubs(next);
+                  }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                      <div style={{ width:12, height:12, borderRadius:"50%", background:sub.color }} />
+                      <input 
+                        value={sub.name} 
+                        onChange={(e) => {
+                          const nt = [...gateTemplate];
+                          nt[i].name = e.target.value;
+                          setGateTemplate(nt);
+                        }} 
+                        onClick={e => e.stopPropagation()}
+                        style={{ background:"transparent", border:"none", color:"#fff", fontFamily:"'Poppins',sans-serif", fontSize:"1rem", fontWeight:700, outline:"none", width:200 }} 
+                      />
+                      <span style={{ background:"rgba(255,255,255,0.1)", color:"rgba(255,255,255,0.6)", padding:"2px 8px", borderRadius:100, fontSize:"0.7rem", fontFamily:"'Poppins',sans-serif" }}>
+                        {sub.chapters.length} ch
+                      </span>
+                    </div>
+                    <div style={{ display:"flex", alignItems:"center", gap:16 }}>
+                      <button onClick={(e) => {
+                        e.stopPropagation();
+                        if(confirm('Delete subject?')) {
+                          setGateTemplate(gateTemplate.filter((_, idx) => idx !== i));
+                        }
+                      }} style={{ background:"none", border:"none", color:"#f87171", cursor:"pointer", fontSize:"0.8rem", fontFamily:"'Poppins',sans-serif" }}>Delete</button>
+                      <span style={{ color:"rgba(255,255,255,0.3)", transform: expandedGateSubs.has(i) ? "rotate(180deg)" : "rotate(0deg)", transition:"transform 0.2s" }}>▼</span>
+                    </div>
+                  </div>
+                  
+                  {expandedGateSubs.has(i) && (
+                    <div style={{ borderTop:"1px solid rgba(255,255,255,0.05)", padding:"16px 20px", background:"rgba(0,0,0,0.2)" }}>
+                      <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:16 }}>
+                        {sub.chapters.map((ch, j) => (
+                          <div key={j} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", background:"rgba(255,255,255,0.02)", padding:"8px 12px", borderRadius:8, border:"1px solid rgba(255,255,255,0.05)" }}>
+                            <span style={{ fontFamily:"'Poppins',sans-serif", fontSize:"0.85rem", color:"rgba(255,255,255,0.8)" }}>{ch.name}</span>
+                            <button onClick={() => {
+                              const nt = [...gateTemplate];
+                              nt[i].chapters.splice(j, 1);
+                              setGateTemplate(nt);
+                            }} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.3)", cursor:"pointer", fontSize:"0.8rem" }}>✕</button>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ display:"flex", gap:8 }}>
+                        <input 
+                          value={newChapterName[i] || ""} 
+                          onChange={e => setNewChapterName({...newChapterName, [i]: e.target.value})}
+                          placeholder="New chapter name..."
+                          onKeyDown={e => {
+                            if(e.key==='Enter' && newChapterName[i]?.trim()) {
+                              const nt = [...gateTemplate];
+                              nt[i].chapters.push({ name: newChapterName[i].trim() });
+                              setGateTemplate(nt);
+                              setNewChapterName({...newChapterName, [i]: ""});
+                            }
+                          }}
+                          style={{ flex:1, background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:8, color:"#fff", padding:"8px 12px", fontFamily:"'Poppins',sans-serif", fontSize:"0.8rem", outline:"none" }}
+                        />
+                        <button onClick={() => {
+                          if (newChapterName[i]?.trim()) {
+                            const nt = [...gateTemplate];
+                            nt[i].chapters.push({ name: newChapterName[i].trim() });
+                            setGateTemplate(nt);
+                            setNewChapterName({...newChapterName, [i]: ""});
+                          }
+                        }} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:8, color:"#fff", padding:"0 16px", cursor:"pointer", fontFamily:"'Poppins',sans-serif", fontSize:"0.8rem" }}>Add</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+              
+              {/* Add Subject */}
+              {showAddSub ? (
+                <div style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:14, padding:"16px 20px" }}>
+                  <div style={{ fontFamily:"'Poppins',sans-serif", fontSize:"0.85rem", color:"#fff", marginBottom:12, fontWeight:600 }}>Add New Subject</div>
+                  <input 
+                    value={newSubName} 
+                    onChange={e => setNewSubName(e.target.value)} 
+                    placeholder="Subject Name" 
+                    autoFocus
+                    style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:8, color:"#fff", padding:"10px 12px", fontFamily:"'Poppins',sans-serif", fontSize:"0.85rem", outline:"none", marginBottom:12, boxSizing:"border-box" }} 
+                  />
+                  <div style={{ display:"flex", gap:8, marginBottom:16, flexWrap:"wrap" }}>
+                    {["#C36BFF", "#4A90FF", "#28D7FF", "#9e7dff", "#ff6b6b", "#ffa94d", "#69db7c", "#4dabf7", "#f783ac", "#a9e34b"].map(c => (
+                      <div key={c} onClick={() => setNewSubColor(c)} style={{ width:24, height:24, borderRadius:"50%", background:c, cursor:"pointer", border: newSubColor === c ? "2px solid #fff" : "2px solid transparent" }} />
+                    ))}
+                  </div>
+                  <div style={{ display:"flex", gap:10 }}>
+                    <button onClick={handleAddSubject} style={{ background:"#FF6A00", border:"none", borderRadius:8, color:"#fff", padding:"8px 16px", cursor:"pointer", fontFamily:"'Poppins',sans-serif", fontSize:"0.8rem", fontWeight:600 }}>Save Subject</button>
+                    <button onClick={() => setShowAddSub(false)} style={{ background:"transparent", border:"1px solid rgba(255,255,255,0.2)", borderRadius:8, color:"rgba(255,255,255,0.6)", padding:"8px 16px", cursor:"pointer", fontFamily:"'Poppins',sans-serif", fontSize:"0.8rem" }}>Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => setShowAddSub(true)} style={{ background:"rgba(255,255,255,0.02)", border:"1px dashed rgba(255,255,255,0.2)", borderRadius:14, color:"rgba(255,255,255,0.5)", padding:"16px", cursor:"pointer", fontFamily:"'Poppins',sans-serif", fontSize:"0.9rem", display:"flex", justifyContent:"center", alignItems:"center", gap:8 }}>
+                  + Add Subject
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

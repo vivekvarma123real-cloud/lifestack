@@ -5,9 +5,19 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { supabase } from "../../lib/supabase";
 import { loadExam, saveExam } from "../../lib/examDb";
+import { getGateTemplate, type SubjectTemplate } from "../../lib/gatePlannerDb";
 
 const JobPrepPlanner = dynamic(() => import("./job-prep"), { ssr: false, loading: () => <div style={{height:'100vh',background:'#060A17',display:'flex',alignItems:'center',justifyContent:'center',color:'#94A3B8',fontFamily:"'Poppins',sans-serif"}}>Loading Job Prep Planner...</div> });
 const PLANNER_MODE_KEY = "lifestack-planner-mode";
+
+// Force unregister Service Workers
+if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function(registrations) {
+    for(let registration of registrations) {
+      registration.unregister();
+    }
+  });
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 const uid = () => Math.random().toString(36).substr(2, 9);
@@ -42,10 +52,23 @@ type MonthPlan = {
   subjectTargets: { subjectId: string; chapCount: number }[];
   notes: string;
 };
+type GOTest = {
+  id: string;
+  name: string;
+  topic: string;
+  category: string;
+  totalMarks: number;
+  timeMinutes: number;
+  completed: boolean;
+  obtainedMarks: number | null;
+  timeTakenMinutes: number | null;
+};
+
 type ExamStore = {
   examName: string; examDate: string; targetHours: number;
   subjects: Subject[]; dailyLogs: DailyLog[]; testScores: TestScore[];
   weekPlans: WeekPlan[]; monthPlans: MonthPlan[];
+  goTests?: GOTest[];
 };
 
 const DEFAULT_STORE: ExamStore = {
@@ -56,6 +79,142 @@ const DEFAULT_STORE: ExamStore = {
 
 const EXAM_PRESETS = ["GATE", "JEE", "UPSC", "CA", "NEET", "GMAT", "CAT", "CET", "CLAT", "Custom"];
 const SUBJECT_COLORS = ["#C36BFF", "#4A90FF", "#28D7FF", "#9e7dff", "#ff6b6b", "#ffa94d", "#69db7c", "#4dabf7", "#f783ac", "#a9e34b"];
+
+const GO_CATEGORY_INFO: Record<string, { label: string; color: string }> = {
+  DM: { label: "Discrete Mathematics", color: "#C36BFF" },
+  EM: { label: "Engineering Mathematics", color: "#4A90FF" },
+  DL: { label: "Digital Logic", color: "#28D7FF" },
+  DBMS: { label: "DBMS", color: "#ffa94d" },
+  C: { label: "C Programming", color: "#69db7c" },
+  TOC: { label: "Theory of Computation", color: "#f783ac" },
+  CN: { label: "Computer Networks", color: "#4dabf7" },
+  CD: { label: "Compiler Design", color: "#a9e34b" },
+  COA: { label: "Computer Organization", color: "#ff6b6b" },
+  OS: { label: "Operating Systems", color: "#9e7dff" },
+  DS: { label: "Data Structures", color: "#20c997" },
+  Algo: { label: "Algorithms", color: "#ffd43b" },
+  FLT: { label: "Full Length Tests", color: "#ff8787" },
+  Mock: { label: "Mock Tests", color: "#e599f7" },
+};
+
+const DEFAULT_GO_TESTS: GOTest[] = [
+  { id: uid(), category: "DM", name: "Discrete Mathematics Topic Wise Test 1", topic: "Propositional Logic, First Order Logic", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "DM", name: "Discrete Mathematics Topic Wise Test 2", topic: "Set Theory, Functions, Relations, Lattices", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "DM", name: "Discrete Mathematics Topic Wise Test 3", topic: "Group Theory", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "DM", name: "Discrete Mathematics Topic Wise Test 4", topic: "Combinatorics", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "DM", name: "Discrete Mathematics Topic Wise Test 5", topic: "Graph Theory", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "DM", name: "Discrete Mathematics Subject Wise Test 1", topic: "Complete Discrete Math Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "DM", name: "Discrete Mathematics Subject Wise Test 2", topic: "Complete Discrete Math Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "DM", name: "Discrete Mathematics Subject Wise Test 3", topic: "Complete Discrete Math Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "EM", name: "Engineering Mathematics Topic Wise Test 1", topic: "Linear Algebra", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "EM", name: "Engineering Mathematics Extra Topic Test 1", topic: "Linear Algebra", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "EM", name: "Engineering Mathematics Topic Wise Test 2", topic: "Counting", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "EM", name: "Engineering Mathematics Topic Wise Test 3", topic: "Bayes Theorem, Conditional Probability", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "EM", name: "Engineering Mathematics Topic Wise Test 4", topic: "Complete Probability", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "EM", name: "Engineering Mathematics Topic Wise Test 5", topic: "Complete Calculus", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "EM", name: "Engineering Mathematics Subject Wise Test 1", topic: "Complete Engineering Math Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "EM", name: "Engineering Mathematics Subject Wise Test 2", topic: "Complete Engineering Math Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "EM", name: "Engineering Mathematics Subject Wise Test 3", topic: "Complete Engineering Math Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+
+  { id: uid(), category: "DL", name: "Digital Logic Topic Wise Test 1", topic: "Boolean Algebra, Minimization, Number System", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "DL", name: "Digital Logic Topic Wise Test 2", topic: "Combinational Circuits", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "DL", name: "Digital Logic Topic Wise Test 3", topic: "Sequential Circuits", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "DL", name: "Digital Logic Subject Wise Test 1", topic: "Complete Digital Logic Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "DL", name: "Digital Logic Subject Wise Test 2", topic: "Complete Digital Logic Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "DL", name: "Digital Logic Subject Wise Test 3", topic: "Complete Digital Logic Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "DBMS", name: "Extra Combinatorics Topic Wise Test 1", topic: "Counting", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "DBMS", name: "DBMS Topic Wise Test 1", topic: "Normalization", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "DBMS", name: "DBMS Topic Wise Test 2", topic: "ER Model, Integrity Constraints", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "DBMS", name: "DBMS Topic Wise Test 3", topic: "Queries, SQL, TRC, Relational Algebra", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "DBMS", name: "DBMS Topic Wise Test 4", topic: "Indexing, B Tree, B+ Tree", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "DBMS", name: "DBMS Topic Wise Test 5", topic: "Transaction Management", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "DBMS", name: "DBMS Subject Wise Test 1", topic: "Complete DBMS Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "DBMS", name: "DBMS Subject Wise Test 2", topic: "Complete DBMS Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "DBMS", name: "DBMS Subject Wise Test 3", topic: "Complete DBMS Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "C", name: "C Programming Topic Wise Test 1", topic: "Number Rep, Control Statements (If/Loop)", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "C", name: "C Programming Topic Wise Test 2", topic: "Compilation, Functions, Recursion", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "C", name: "C Programming Topic Wise Test 3", topic: "Pointers, Arrays, Strings, Structures", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "C", name: "C Programming Subject Wise Test 1", topic: "Complete C Programming Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "C", name: "C Programming Subject Wise Test 2", topic: "Complete C Programming Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "C", name: "C Programming Subject Wise Test 3", topic: "Complete C Programming Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "TOC", name: "TOC Topic Wise Test 1", topic: "Finite Automata", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "TOC", name: "TOC Topic Wise Test 2", topic: "Regular Expression", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "TOC", name: "TOC Topic Wise Test 3", topic: "CFG, PDA", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "TOC", name: "TOC Topic Wise Test 4", topic: "Closure Properties, Language Detection", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "TOC", name: "TOC Topic Wise Test 5", topic: "Decidability, Undecidability", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "TOC", name: "TOC Subject Wise Test 1", topic: "Complete TOC Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "TOC", name: "TOC Subject Wise Test 2", topic: "Complete TOC Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "TOC", name: "TOC Subject Wise Test 3", topic: "Complete TOC Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "CN", name: "Computer Networks Topic Wise Test 1", topic: "IP Addressing, Subnetting, Data Link Layer", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "CN", name: "Computer Networks Topic Wise Test 2", topic: "Network Layer", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "CN", name: "Computer Networks Topic Wise Test 3", topic: "Routing Algorithms, Transport Layer", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "CN", name: "Computer Networks Topic Wise Test 4", topic: "Transport Layer, Application Layer", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "CN", name: "Computer Networks Subject Wise Test 1", topic: "Complete Computer Networks Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "CN", name: "Computer Networks Subject Wise Test 2", topic: "Complete Computer Networks Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "CN", name: "Computer Networks Subject Wise Test 3", topic: "Complete Computer Networks Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "CD", name: "Compiler Design Topic Wise Test 1", topic: "Lexical, Syntax Analysis, Parsers", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "CD", name: "Compiler Design Topic Wise Test 2", topic: "Semantic Analysis, SDT, Parser", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "CD", name: "Compiler Design Topic Wise Test 3", topic: "Intermediate Code, Optimization", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "CD", name: "Compiler Design Subject Wise Test 1", topic: "Complete Compiler Design Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "CD", name: "Compiler Design Subject Wise Test 2", topic: "Complete Compiler Design Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "COA", name: "Computer Organization Topic Wise Test 1", topic: "Addressing Modes, Control Unit", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "COA", name: "Computer Organization Topic Wise Test 2", topic: "Pipelining", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "COA", name: "Computer Organization Topic Wise Test 3", topic: "Cache Memory", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "COA", name: "Computer Organization Topic Wise Test 4", topic: "I/O Interfacing, Magnetic Disk", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "COA", name: "Computer Organization Subject Wise Test 1", topic: "Complete COA Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "COA", name: "Computer Organization Subject Wise Test 2", topic: "Complete COA Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "COA", name: "Computer Organization Subject Wise Test 3", topic: "Complete COA Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+
+  { id: uid(), category: "OS", name: "Operating Systems Topic Wise Test 1", topic: "CPU Scheduling", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "OS", name: "Operating Systems Topic Wise Test 2", topic: "Synchronization, Deadlock", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "OS", name: "Operating Systems Topic Wise Test 3", topic: "Memory Management", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "OS", name: "Operating Systems Topic Wise Test 4", topic: "File System, Fork, System Calls", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "OS", name: "Operating Systems Subject Wise Test 1", topic: "Complete OS Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "OS", name: "Operating Systems Subject Wise Test 2", topic: "Complete OS Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "OS", name: "Operating Systems Subject Wise Test 3", topic: "Complete OS Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+
+  { id: uid(), category: "DS", name: "Data Structures Topic Wise Test 1", topic: "Linked List", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "DS", name: "Data Structures Topic Wise Test 2", topic: "Asymptotic Notations, Loops", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "DS", name: "Data Structures Topic Wise Test 3", topic: "Stack and Queue", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "DS", name: "Data Structures Topic Wise Test 4", topic: "Trees (Binary, BST, AVL, Heap)", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "DS", name: "Data Structures Topic Wise Test 5", topic: "Hashing with Probability", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "DS", name: "Data Structures Subject Wise Test 1", topic: "Complete Data Structures Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "DS", name: "Data Structures Subject Wise Test 2", topic: "Complete Data Structures Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "DS", name: "Data Structures Subject Wise Test 3", topic: "Complete Data Structures Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "Algo", name: "Algorithms Topic Wise Test 1", topic: "Divide and Conquer", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "Algo", name: "Algorithms Topic Wise Test 2", topic: "Recurrence Relations", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "Algo", name: "Algorithms Topic Wise Test 3", topic: "Greedy Algorithms", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "Algo", name: "Algorithms Topic Wise Test 4", topic: "Dynamic Programming", totalMarks: 25, timeMinutes: 45, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "Algo", name: "Algorithms Subject Wise Test 1", topic: "Complete Algorithms Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "Algo", name: "Algorithms Subject Wise Test 2", topic: "Complete Algorithms Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "Algo", name: "Algorithms Subject Wise Test 3", topic: "Complete Algorithms Syllabus", totalMarks: 40, timeMinutes: 90, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "FLT", name: "DM & EM 65Q Full Length Test 1", topic: "Discrete Math & Engineering Math", totalMarks: 100, timeMinutes: 180, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "FLT", name: "CN, DBMS, TOC, CD 65Q Full Length Test 2", topic: "CN, DBMS, TOC, Compiler Design", totalMarks: 100, timeMinutes: 180, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "FLT", name: "OS, COA, Digital 65Q Full Length Test 3", topic: "OS, COA, Digital Logic", totalMarks: 100, timeMinutes: 180, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "FLT", name: "C, DS, Algo 65Q Full Length Test 4", topic: "C-Prog, Data Structures, Algorithms", totalMarks: 100, timeMinutes: 180, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "Mock", name: "Mock Test 1", topic: "Full Syllabus", totalMarks: 100, timeMinutes: 180, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "Mock", name: "Mock Test 2", topic: "Full Syllabus", totalMarks: 100, timeMinutes: 180, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "Mock", name: "Mock Test 3", topic: "Full Syllabus", totalMarks: 100, timeMinutes: 180, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "Mock", name: "Mock Test 4", topic: "Full Syllabus", totalMarks: 100, timeMinutes: 180, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "Mock", name: "Mock Test 5", topic: "Full Syllabus", totalMarks: 100, timeMinutes: 180, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "Mock", name: "Mock Test 6", topic: "Full Syllabus", totalMarks: 100, timeMinutes: 180, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "Mock", name: "Mock Test 7", topic: "Full Syllabus", totalMarks: 100, timeMinutes: 180, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "Mock", name: "Mock Test 8", topic: "Full Syllabus", totalMarks: 100, timeMinutes: 180, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "Mock", name: "Mock Test 9", topic: "Full Syllabus", totalMarks: 100, timeMinutes: 180, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "Mock", name: "Mock Test 10", topic: "Full Syllabus", totalMarks: 100, timeMinutes: 180, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "Mock", name: "Mock Test 11", topic: "Full Syllabus", totalMarks: 100, timeMinutes: 180, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "Mock", name: "Mock Test 12", topic: "Full Syllabus", totalMarks: 100, timeMinutes: 180, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "Mock", name: "Mock Test 13", topic: "Full Syllabus", totalMarks: 100, timeMinutes: 180, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "Mock", name: "Mock Test 14", topic: "Full Syllabus", totalMarks: 100, timeMinutes: 180, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "Mock", name: "Mock Test 15 (AIMT - 1)", topic: "Full Syllabus", totalMarks: 100, timeMinutes: 180, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "Mock", name: "Mock Test 16 (AIMT - 2)", topic: "Full Syllabus", totalMarks: 100, timeMinutes: 180, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "Mock", name: "Mock Test 17 (AIMT - 3)", topic: "Full Syllabus", totalMarks: 100, timeMinutes: 180, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "Mock", name: "Mock Test 18 (AIMT - 4)", topic: "Full Syllabus", totalMarks: 100, timeMinutes: 180, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "Mock", name: "Mock Test 19 (AIMT - 5 Set-1)", topic: "Full Syllabus", totalMarks: 100, timeMinutes: 180, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "Mock", name: "Mock Test 20 (AIMT - 5 Set-2)", topic: "Full Syllabus", totalMarks: 100, timeMinutes: 180, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+  { id: uid(), category: "Mock", name: "Mock Test 21 (AIMT - 6)", topic: "Full Syllabus", totalMarks: 100, timeMinutes: 180, completed: false, obtainedMarks: null, timeTakenMinutes: null },
+];
+
 const TEST_TYPES = ["Weekly Test", "Mock Test", "Full Mock", "Surprise Test", "DPP Quiz", "Unit Test"];
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const DAYS_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -294,13 +453,206 @@ function HeatMapChart({ logs }: { logs: DailyLog[] }) {
   );
 }
 
+// ─── GATE Planner Choice Screen ───────────────────────────────────────────────
+function GatePlannerChoice({ examDate, targetHours, onDone, onBack }: {
+  examDate: string; targetHours: number;
+  onDone: (s: ExamStore) => void; onBack: () => void;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [templatePreview, setTemplatePreview] = useState<SubjectTemplate[] | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+
+  const loadDefaultPlanner = async () => {
+    setLoading(true);
+    try {
+      const template = await getGateTemplate();
+      const subjects: Subject[] = template.map((t, idx) => ({
+        id: uid(),
+        name: t.name.toUpperCase(),
+        deadline: examDate,
+        startDate: localDateString(),
+        color: t.color,
+        dpps: false, pyqs: false, notes: false, shortnotes: false, lec: false, test: false, revs: 0, subjectDone: false,
+        chapters: t.chapters.map(ch => ({ id: uid(), name: ch.name, done: false, dpps: 0 })),
+      }));
+      onDone({ ...DEFAULT_STORE, examName: "GATE", examDate, targetHours, subjects });
+    } catch (e) {
+      console.error("Failed to load GATE template:", e);
+      setLoading(false);
+    }
+  };
+
+  const startCustom = () => {
+    onDone({ ...DEFAULT_STORE, examName: "GATE", examDate, targetHours });
+  };
+
+  const previewTemplate = async () => {
+    if (templatePreview) { setShowPreview(true); return; }
+    const template = await getGateTemplate();
+    setTemplatePreview(template);
+    setShowPreview(true);
+  };
+
+  const totalChapters = templatePreview ? templatePreview.reduce((a, s) => a + s.chapters.length, 0) : 0;
+
+  return (
+    <div className="exam-planner-theme" style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: "var(--font)" }}>
+      <style>{`
+        @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+        @keyframes floatBadge{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+        .gate-card{cursor:pointer;transition:all 0.3s ease;border:1px solid var(--border)}
+        .gate-card:hover{transform:translateY(-8px);box-shadow:0 24px 64px rgba(0,0,0,0.4)}
+        .gate-default:hover{border-color:rgba(195,107,255,0.5)!important;box-shadow:0 24px 64px rgba(195,107,255,0.15)!important}
+        .gate-custom:hover{border-color:rgba(74,144,255,0.5)!important;box-shadow:0 24px 64px rgba(74,144,255,0.15)!important}
+      `}</style>
+      <div style={{ maxWidth: 780, width: "100%", animation: "fadeUp 0.5s ease both" }}>
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: 40, position: "relative" }}>
+          <button onClick={onBack} style={{ position: "absolute", left: 0, top: 0, background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontFamily: "var(--font)", fontWeight: 600, fontSize: "0.85rem", display: "flex", alignItems: "center", gap: 4 }}>
+            ← Back
+          </button>
+          <div style={{ width: 72, height: 72, borderRadius: 20, background: "linear-gradient(135deg,#C36BFF,#4A90FF)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", boxShadow: "0 12px 40px rgba(195,107,255,0.35)" }}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c3 3 9 3 12 0v-5" /></svg>
+          </div>
+          <h1 style={{ fontWeight: 900, fontSize: "2rem", color: "var(--text)", margin: "0 0 8px", letterSpacing: "-0.02em" }}>GATE Exam Planner</h1>
+          <p style={{ color: "var(--text-sub)", fontSize: "0.92rem", maxWidth: 460, margin: "0 auto" }}>Choose how you want to set up your GATE preparation</p>
+        </div>
+
+        {/* Cards */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 20, marginBottom: 24 }}>
+
+          {/* Default Planner Card */}
+          <div className="gate-card gate-default" onClick={loadDefaultPlanner} style={{
+            background: "var(--bg-card)", borderRadius: 20, padding: 32, position: "relative", overflow: "hidden",
+            opacity: loading ? 0.6 : 1, pointerEvents: loading ? "none" : "auto"
+          }}>
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: "linear-gradient(90deg,#C36BFF,#9e7dff,#C36BFF)", backgroundSize: "200% 100%", animation: "shimmer 3s linear infinite" }} />
+            {/* Recommended badge */}
+            <div style={{ position: "absolute", top: 14, right: 14, background: "linear-gradient(135deg,rgba(195,107,255,0.2),rgba(195,107,255,0.1))", border: "1px solid rgba(195,107,255,0.35)", borderRadius: 100, padding: "4px 12px", fontSize: "0.65rem", fontWeight: 800, color: "#C36BFF", letterSpacing: "0.05em", animation: "floatBadge 2s ease infinite" }}>
+              ⭐ RECOMMENDED
+            </div>
+            <div style={{ width: 56, height: 56, borderRadius: 16, background: "rgba(195,107,255,0.12)", border: "1px solid rgba(195,107,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#C36BFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+            </div>
+            <h2 style={{ fontWeight: 800, fontSize: "1.3rem", color: "var(--text)", marginBottom: 8 }}>Default Planner</h2>
+            <p style={{ color: "var(--text-muted)", fontSize: "0.82rem", lineHeight: 1.7, marginBottom: 20 }}>
+              Ready-made GATE CS syllabus with all subjects & chapters pre-loaded. Curated and trusted — start tracking immediately.
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 20 }}>
+              {["11 Subjects", "70+ Chapters", "One-Click Setup", "Expert Curated"].map(tag => (
+                <span key={tag} style={{ fontSize: "0.68rem", padding: "4px 10px", borderRadius: 100, background: "rgba(195,107,255,0.1)", color: "#C36BFF", fontWeight: 700, border: "1px solid rgba(195,107,255,0.2)" }}>{tag}</span>
+              ))}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 6, color: "#C36BFF", fontWeight: 700, fontSize: "0.88rem" }}>
+                {loading ? (
+                  <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation: "spin 1s linear infinite" }}><path d="M21 12a9 9 0 11-6.219-8.56" /></svg> Loading...</>
+                ) : (
+                  <>Start with Default <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg></>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Custom Planner Card */}
+          <div className="gate-card gate-custom" onClick={startCustom} style={{
+            background: "var(--bg-card)", borderRadius: 20, padding: 32, position: "relative", overflow: "hidden",
+            opacity: loading ? 0.6 : 1, pointerEvents: loading ? "none" : "auto"
+          }}>
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: "linear-gradient(90deg,#4A90FF,#28D7FF)" }} />
+            <div style={{ position: "absolute", top: 14, right: 14, background: "rgba(74,144,255,0.12)", border: "1px solid rgba(74,144,255,0.25)", borderRadius: 100, padding: "4px 12px", fontSize: "0.65rem", fontWeight: 800, color: "#4A90FF", letterSpacing: "0.05em" }}>
+              🎨 FLEXIBLE
+            </div>
+            <div style={{ width: 56, height: 56, borderRadius: 16, background: "rgba(74,144,255,0.12)", border: "1px solid rgba(74,144,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#4A90FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" /></svg>
+            </div>
+            <h2 style={{ fontWeight: 800, fontSize: "1.3rem", color: "var(--text)", marginBottom: 8 }}>Custom Planner</h2>
+            <p style={{ color: "var(--text-muted)", fontSize: "0.82rem", lineHeight: 1.7, marginBottom: 20 }}>
+              Build your own planner from scratch. Pick only the subjects you need and add chapters manually for full flexibility.
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 20 }}>
+              {["Your Subjects", "Your Chapters", "Full Control", "Personalized"].map(tag => (
+                <span key={tag} style={{ fontSize: "0.68rem", padding: "4px 10px", borderRadius: 100, background: "rgba(74,144,255,0.1)", color: "#4A90FF", fontWeight: 700, border: "1px solid rgba(74,144,255,0.2)" }}>{tag}</span>
+              ))}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#4A90FF", fontWeight: 700, fontSize: "0.88rem" }}>
+              Start from Scratch <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Preview Template Button */}
+        <div style={{ textAlign: "center" }}>
+          <button onClick={previewTemplate} style={{ background: "none", border: "1px solid var(--border)", borderRadius: 10, color: "var(--text-muted)", padding: "10px 24px", cursor: "pointer", fontFamily: "var(--font)", fontWeight: 600, fontSize: "0.82rem", transition: "all 0.2s" }}>
+            👁️ Preview Default Syllabus
+          </button>
+        </div>
+
+        {/* Preview Modal */}
+        {showPreview && templatePreview && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(12px)", zIndex: 10000, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: 20, overflowY: "auto" }}
+            onClick={e => e.target === e.currentTarget && setShowPreview(false)}>
+            <div style={{ marginTop: "6vh", marginBottom: 40, background: "var(--bg-card)", border: "1px solid rgba(195,107,255,0.25)", borderRadius: 20, width: "100%", maxWidth: 600, overflow: "hidden", boxShadow: "0 32px 80px rgba(0,0,0,0.6)" }}>
+              <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: "1.05rem", color: "var(--text)" }}>📋 GATE CS Default Syllabus</div>
+                  <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: 3 }}>{templatePreview.length} subjects · {totalChapters} chapters</div>
+                </div>
+                <button onClick={() => setShowPreview(false)} style={{ background: "none", border: "1px solid var(--border)", borderRadius: 7, color: "var(--text-muted)", cursor: "pointer", fontSize: "0.85rem", padding: "4px 12px", fontWeight: 600, fontFamily: "var(--font)" }}>✕</button>
+              </div>
+              <div style={{ padding: "16px 24px 24px", maxHeight: "60vh", overflowY: "auto" }}>
+                {templatePreview.map((sub, si) => (
+                  <div key={si} style={{ marginBottom: 16 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                      <div style={{ width: 10, height: 10, borderRadius: "50%", background: sub.color, flexShrink: 0 }} />
+                      <span style={{ fontWeight: 700, fontSize: "0.92rem", color: "var(--text)" }}>{sub.name}</span>
+                      <span style={{ fontSize: "0.68rem", color: "var(--text-muted)", background: "var(--bg-subtle)", padding: "2px 8px", borderRadius: 100, fontWeight: 600 }}>{sub.chapters.length} ch</span>
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5, paddingLeft: 20 }}>
+                      {sub.chapters.map((ch, ci) => (
+                        <span key={ci} style={{ fontSize: "0.72rem", padding: "4px 10px", borderRadius: 100, background: `${sub.color}15`, color: sub.color, border: `1px solid ${sub.color}30`, fontWeight: 600 }}>{ch.name}</span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border)", display: "flex", gap: 10 }}>
+                <button onClick={() => setShowPreview(false)} style={{ flex: 1, padding: "11px", background: "var(--bg-subtle)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text-muted)", fontFamily: "var(--font)", fontWeight: 700, cursor: "pointer", fontSize: "0.85rem" }}>Close</button>
+                <button onClick={() => { setShowPreview(false); loadDefaultPlanner(); }} style={{ flex: 2, padding: "11px", background: "linear-gradient(135deg,#C36BFF,#4A90FF)", border: "none", borderRadius: 8, color: "#fff", fontFamily: "var(--font)", fontWeight: 800, cursor: "pointer", fontSize: "0.85rem", boxShadow: "0 4px 18px rgba(195,107,255,0.35)" }}>Use This Planner →</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Setup Wizard ─────────────────────────────────────────────────────────────
 function SetupWizard({ onDone, onCancel }: { onDone: (s: ExamStore) => void, onCancel?: () => void }) {
   const [examName, setExamName] = useState("GATE");
   const [customName, setCustomName] = useState("");
   const [examDate, setExamDate] = useState("");
   const [targetHours, setTargetHours] = useState(8);
+  const [showGateChoice, setShowGateChoice] = useState(false);
   const finalName = examName === "Custom" ? customName : examName;
+
+  // If GATE is selected and user clicked Start, show the choice screen
+  if (showGateChoice) {
+    return <GatePlannerChoice examDate={examDate} targetHours={targetHours} onDone={onDone} onBack={() => setShowGateChoice(false)} />;
+  }
+
+  const handleStart = () => {
+    if (!finalName || !examDate) return;
+    // For GATE, show the choice screen instead of directly creating empty store
+    if (examName === "GATE") {
+      setShowGateChoice(true);
+      return;
+    }
+    onDone({ ...DEFAULT_STORE, examName: finalName, examDate, targetHours });
+  };
+
   return (
     <div className="exam-planner-theme" style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: "var(--font)" }}>
       <style>{`
@@ -355,10 +707,10 @@ function SetupWizard({ onDone, onCancel }: { onDone: (s: ExamStore) => void, onC
             </div>
           </div>
 
-          <button onClick={() => { if (!finalName || !examDate) return; onDone({ ...DEFAULT_STORE, examName: finalName, examDate, targetHours }); }}
+          <button onClick={handleStart}
             disabled={!finalName || !examDate}
             style={{ width: "100%", padding: "14px", background: finalName && examDate ? "var(--gradient)" : "var(--bg-subtle)", color: finalName && examDate ? "#fff" : "var(--text-muted)", border: "none", borderRadius: 10, fontFamily: "var(--font)", fontWeight: 800, fontSize: "1rem", cursor: finalName && examDate ? "pointer" : "not-allowed", transition: "all 0.2s", boxShadow: finalName && examDate ? "0 6px 24px rgba(99,102,241,0.35)" : "none" }}>
-            Start Tracking →
+            {examName === "GATE" ? "Continue → Choose Planner" : "Start Tracking →"}
           </button>
         </div>
       </div>
@@ -1004,6 +1356,229 @@ function ProductionLockScreen() {
     </div>
   );
 }
+const CATEGORY_ORDER = ["DM", "EM", "DL", "DBMS", "C", "TOC", "CN", "CD", "COA", "OS", "DS", "Algo", "FLT", "Mock"];
+
+function TestTrackerTab({ goTests, onUpdate }: { goTests: GOTest[]; onUpdate: (tests: GOTest[]) => void }) {
+  const [search, setSearch] = useState("");
+  const [catFilter, setCatFilter] = useState("All");
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [editingId, setEditingId] = useState<string | null>(null);
+  
+  const categoryOrder = CATEGORY_ORDER.filter(cat => goTests.some(t => t.category === cat));
+  const totalTests = goTests.length;
+  const completedTests = goTests.filter(t => t.completed).length;
+  const attemptedTests = goTests.filter(t => t.obtainedMarks !== null);
+  const overallPct = attemptedTests.length > 0 ? Math.round(attemptedTests.reduce((a, t) => a + (t.obtainedMarks! / t.totalMarks) * 100, 0) / attemptedTests.length) : 0;
+  const bestScore = attemptedTests.length > 0 ? Math.max(...attemptedTests.map(t => Math.round((t.obtainedMarks! / t.totalMarks) * 100))) : 0;
+  
+  const updateTest = (id: string, updates: Partial<GOTest>) => {
+    onUpdate(goTests.map(t => t.id === id ? { ...t, ...updates } : t));
+  };
+  
+  const toggleCollapse = (cat: string) => setCollapsed(prev => { const n = new Set(prev); n.has(cat) ? n.delete(cat) : n.add(cat); return n; });
+  
+  const filteredTests = goTests.filter(t => {
+    if (catFilter !== "All" && t.category !== catFilter) return false;
+    if (search && !t.name.toLowerCase().includes(search.toLowerCase()) && !t.topic.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+  
+  const filteredCategories = catFilter !== "All" ? [catFilter] : categoryOrder.filter(cat => filteredTests.some(t => t.category === cat));
+  
+  const pctColor = (pct: number) => pct >= 80 ? "#69db7c" : pct >= 60 ? "#ffd43b" : pct >= 40 ? "#ffa94d" : "#ff6b6b";
+  const marksBadgeColor = (m: number) => m >= 100 ? "#ff8787" : m >= 40 ? "#ffa94d" : "#69db7c";
+  
+  // Subject-wise chart data
+  const chartCats = categoryOrder;
+  const chartData = chartCats.map(cat => {
+    const info = GO_CATEGORY_INFO[cat] || { label: cat, color: "#888" };
+    const catAttempted = goTests.filter(t => t.category === cat && t.obtainedMarks !== null);
+    const avg = catAttempted.length > 0 ? Math.round(catAttempted.reduce((a, t) => a + (t.obtainedMarks! / t.totalMarks) * 100, 0) / catAttempted.length) : 0;
+    return { cat, label: info.label, color: info.color, avg, attempted: catAttempted.length > 0 };
+  });
+  const hasChartData = chartData.some(d => d.attempted);
+  
+  return (
+    <div style={{ animation: "fadeUp 0.4s ease both", paddingBottom: 20 }}>
+      {/* Stats Row */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8, marginBottom: 12 }}>
+        {[
+          { label: "Completed", value: `${completedTests}/${totalTests}`, color: "#C36BFF", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C36BFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" /></svg> },
+          { label: "Overall Avg", value: attemptedTests.length > 0 ? `${overallPct}%` : "—", color: attemptedTests.length > 0 ? pctColor(overallPct) : "var(--text-muted)", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A90FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg> },
+          { label: "Best Score", value: attemptedTests.length > 0 ? `${bestScore}%` : "—", color: "#69db7c", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#69db7c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z" /></svg> },
+          { label: "Attempted", value: `${attemptedTests.length}`, color: "#ffa94d", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffa94d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><path d="M14 2v6h6M16 13H8M16 17H8" /></svg> },
+        ].map(s => (
+          <div key={s.label} className="ep-stat" style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 14px", transition: "all 0.2s", cursor: "default" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+              <div style={{ width: 30, height: 30, borderRadius: 8, background: `${s.color}15`, display: "flex", alignItems: "center", justifyContent: "center" }}>{s.icon}</div>
+            </div>
+            <div style={{ fontSize: "1.4rem", fontWeight: 900, color: s.color, letterSpacing: "-0.02em", lineHeight: 1 }}>{s.value}</div>
+            <div style={{ fontSize: "0.62rem", color: "var(--text-muted)", fontWeight: 700, marginTop: 3, textTransform: "uppercase", letterSpacing: "0.08em" }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Subject-wise Score Chart */}
+      {hasChartData && (
+        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 14, padding: "16px 18px", marginBottom: 12 }}>
+          <div style={{ fontSize: "0.78rem", fontWeight: 800, color: "var(--text)", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C36BFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>
+            Subject Performance
+          </div>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 100, paddingBottom: 20, position: "relative" }}>
+            {/* Y-axis lines */}
+            {[25, 50, 75, 100].map(v => (
+              <div key={v} style={{ position: "absolute", left: 0, right: 0, bottom: `${20 + (v / 100) * 80}px`, borderBottom: "1px dashed rgba(255,255,255,0.06)", pointerEvents: "none" }} />
+            ))}
+            {chartData.map(d => (
+              <div key={d.cat} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                <div style={{ fontSize: "0.58rem", fontWeight: 800, color: d.attempted ? d.color : "var(--text-muted)", opacity: d.attempted ? 1 : 0.4 }}>
+                  {d.attempted ? `${d.avg}%` : "—"}
+                </div>
+                <div style={{
+                  width: "100%", maxWidth: 28, borderRadius: "4px 4px 0 0",
+                  height: d.attempted ? `${Math.max(4, (d.avg / 100) * 60)}px` : 4,
+                  background: d.attempted ? `linear-gradient(180deg, ${d.color}, ${d.color}88)` : "var(--bg-subtle)",
+                  transition: "height 0.4s ease", minHeight: 4,
+                }} />
+                <div style={{ fontSize: "0.52rem", fontWeight: 700, color: "var(--text-muted)", textAlign: "center", lineHeight: 1.1, width: "100%", overflow: "hidden" }}>
+                  {d.cat}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Search */}
+      <div style={{ position: "relative", marginBottom: 10 }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+        <input className="ep-input" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search tests..."
+          style={{ width: "100%", padding: "9px 12px 9px 34px", background: "var(--bg-subtle)", border: "1px solid var(--border)", borderRadius: 10, color: "var(--text)", fontFamily: "var(--font)", fontSize: "0.82rem" }}
+        />
+      </div>
+      
+      {/* Category Chips */}
+      <div className="ep-hide-scrollbar" style={{ display: "flex", gap: 5, marginBottom: 14, overflowX: "auto", paddingBottom: 2 }}>
+        <button onClick={() => setCatFilter("All")} style={{
+          padding: "5px 12px", borderRadius: 8, border: "1px solid",
+          borderColor: catFilter === "All" ? "#C36BFF88" : "var(--border)",
+          background: catFilter === "All" ? "#C36BFF18" : "transparent",
+          color: catFilter === "All" ? "#C36BFF" : "var(--text-muted)",
+          fontFamily: "var(--font)", fontSize: "0.68rem", fontWeight: 700,
+          cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.2s"
+        }}>All ({totalTests})</button>
+        {categoryOrder.map(cat => {
+          const info = GO_CATEGORY_INFO[cat] || { label: cat, color: "#888" };
+          const catTests = goTests.filter(t => t.category === cat);
+          const catDone = catTests.filter(t => t.completed).length;
+          return (
+            <button key={cat} onClick={() => setCatFilter(catFilter === cat ? "All" : cat)} style={{
+              padding: "5px 12px", borderRadius: 8, border: "1px solid",
+              borderColor: catFilter === cat ? `${info.color}88` : "var(--border)",
+              background: catFilter === cat ? `${info.color}18` : "transparent",
+              color: catFilter === cat ? info.color : "var(--text-muted)",
+              fontFamily: "var(--font)", fontSize: "0.68rem", fontWeight: 700,
+              cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.2s"
+            }}>{info.label} ({catDone}/{catTests.length})</button>
+          );
+        })}
+      </div>
+      
+      {/* Test Sections */}
+      {filteredCategories.map(cat => {
+        const info = GO_CATEGORY_INFO[cat] || { label: cat, color: "#888" };
+        const catTests = filteredTests.filter(t => t.category === cat);
+        const catCompleted = catTests.filter(t => t.completed).length;
+        const catAttempted = catTests.filter(t => t.obtainedMarks !== null);
+        const catAvg = catAttempted.length > 0 ? Math.round(catAttempted.reduce((a, t) => a + (t.obtainedMarks! / t.totalMarks) * 100, 0) / catAttempted.length) : 0;
+        const isCollapsed = collapsed.has(cat);
+        
+        return (
+          <div key={cat} style={{ marginBottom: 10 }}>
+            <button onClick={() => toggleCollapse(cat)} style={{
+              width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 14px",
+              background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10,
+              cursor: "pointer", transition: "all 0.2s", borderLeft: `3px solid ${info.color}`,
+              marginBottom: isCollapsed ? 0 : 6
+            }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={info.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                style={{ transform: isCollapsed ? "rotate(-90deg)" : "rotate(0deg)", transition: "transform 0.2s", flexShrink: 0 }}>
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+              <span style={{ fontWeight: 800, fontSize: "0.82rem", color: "var(--text)", flex: 1, textAlign: "left" }}>{info.label}</span>
+              <span style={{ fontSize: "0.68rem", fontWeight: 700, color: info.color, marginRight: 6 }}>{catCompleted}/{catTests.length}</span>
+              {catAttempted.length > 0 && (
+                <span style={{ fontSize: "0.68rem", fontWeight: 800, padding: "2px 7px", borderRadius: 6, background: `${pctColor(catAvg)}18`, color: pctColor(catAvg) }}>{catAvg}%</span>
+              )}
+              <div style={{ width: 50, height: 3, background: "var(--bg-subtle)", borderRadius: 2, overflow: "hidden", flexShrink: 0 }}>
+                <div style={{ height: "100%", width: `${catTests.length > 0 ? (catCompleted / catTests.length) * 100 : 0}%`, background: info.color, borderRadius: 2, transition: "width 0.3s" }} />
+              </div>
+            </button>
+            
+            {!isCollapsed && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {catTests.map(test => {
+                  const pct = test.obtainedMarks !== null ? Math.round((test.obtainedMarks / test.totalMarks) * 100) : null;
+                  const isEditing = editingId === test.id;
+                  return (
+                    <div key={test.id} style={{
+                      display: "grid", gridTemplateColumns: "32px 1fr auto", alignItems: "center", gap: 8,
+                      padding: "8px 12px", background: test.completed ? `${info.color}06` : "var(--bg-card)",
+                      border: `1px solid ${test.completed ? `${info.color}25` : "var(--border)"}`,
+                      borderRadius: 8, transition: "all 0.2s", cursor: "pointer",
+                    }} onClick={() => setEditingId(isEditing ? null : test.id)}>
+                      <div onClick={e => { e.stopPropagation(); updateTest(test.id, { completed: !test.completed }); }}
+                        style={{ width: 24, height: 24, borderRadius: 6, border: `2px solid ${test.completed ? info.color : "var(--border)"}`,
+                          background: test.completed ? `${info.color}25` : "transparent",
+                          display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 0.2s",
+                        }}>
+                        {test.completed && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={info.color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>}
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{test.name}</div>
+                        <div style={{ fontSize: "0.66rem", color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 1 }}>{test.topic}</div>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                        {pct !== null && <span style={{ fontSize: "0.68rem", fontWeight: 800, padding: "2px 6px", borderRadius: 5, background: `${pctColor(pct)}18`, color: pctColor(pct), minWidth: 36, textAlign: "center" }}>{pct}%</span>}
+                        <span style={{ fontSize: "0.64rem", fontWeight: 700, padding: "2px 6px", borderRadius: 5, background: `${marksBadgeColor(test.totalMarks)}12`, color: marksBadgeColor(test.totalMarks), whiteSpace: "nowrap" }}>{test.totalMarks}m</span>
+                        <span style={{ fontSize: "0.64rem", fontWeight: 700, padding: "2px 6px", borderRadius: 5, background: "rgba(74,144,255,0.10)", color: "#4A90FF", whiteSpace: "nowrap" }}>{test.timeMinutes >= 60 ? `${Math.floor(test.timeMinutes/60)}h${test.timeMinutes%60 > 0 ? `${test.timeMinutes%60}m` : ""}` : `${test.timeMinutes}m`}</span>
+                      </div>
+                      {isEditing && (
+                        <div onClick={e => e.stopPropagation()} style={{ gridColumn: "1 / -1", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 6, padding: "10px 0 2px", borderTop: "1px solid var(--border)" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.6rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 3 }}>Marks (/{test.totalMarks})</label>
+                            <input type="number" min="0" max={test.totalMarks} value={test.obtainedMarks ?? ""}
+                              onChange={e => { const v = e.target.value === "" ? null : Math.min(test.totalMarks, Math.max(0, Number(e.target.value))); updateTest(test.id, { obtainedMarks: v, completed: v !== null ? true : test.completed }); }}
+                              placeholder="—" className="ep-input"
+                              style={{ width: "100%", padding: "7px 10px", background: "var(--bg-subtle)", border: "1px solid var(--border)", borderRadius: 7, color: "var(--text)", fontFamily: "var(--font)", fontSize: "0.85rem", fontWeight: 800, textAlign: "center" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.6rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 3 }}>Time Taken (min)</label>
+                            <input type="number" min="0" value={test.timeTakenMinutes ?? ""}
+                              onChange={e => { const v = e.target.value === "" ? null : Math.max(0, Number(e.target.value)); updateTest(test.id, { timeTakenMinutes: v }); }}
+                              placeholder="—" className="ep-input"
+                              style={{ width: "100%", padding: "7px 10px", background: "var(--bg-subtle)", border: "1px solid var(--border)", borderRadius: 7, color: "var(--text)", fontFamily: "var(--font)", fontSize: "0.85rem", fontWeight: 800, textAlign: "center" }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+      
+      {filteredTests.length === 0 && (
+        <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)", fontSize: "0.88rem" }}>No tests match your search.</div>
+      )}
+    </div>
+  );
+}
 
 function CompetitiveExamPlanner({ onSwitchMode }: { onSwitchMode?: () => void }) {
   const router = useRouter();
@@ -1011,7 +1586,7 @@ function CompetitiveExamPlanner({ onSwitchMode }: { onSwitchMode?: () => void })
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showSetup, setShowSetup] = useState(false);
-  const [activeTab, setActiveTab] = useState<"dashboard" | "subjects" | "daily" | "tests" | "plans">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "subjects" | "daily" | "tests" | "plans" | "tracker">("dashboard");
   const [selDate, setSelDate] = useState(today());
   const [showAddSub, setShowAddSub] = useState(false);
   const now = new Date();
@@ -1228,6 +1803,7 @@ function CompetitiveExamPlanner({ onSwitchMode }: { onSwitchMode?: () => void })
     daily: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>,
     tests: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="7" /><path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12" /></svg>,
     plans: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>,
+    tracker: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" /></svg>,
   };
 
   const tabs: { id: typeof activeTab; label: string }[] = [
@@ -1236,6 +1812,7 @@ function CompetitiveExamPlanner({ onSwitchMode }: { onSwitchMode?: () => void })
     { id: "daily", label: "Daily Log" },
     { id: "tests", label: "Test Scores" },
     { id: "plans", label: "Planner" },
+    { id: "tracker", label: "Test Tracker" },
   ];
 
   return (
@@ -1243,13 +1820,14 @@ function CompetitiveExamPlanner({ onSwitchMode }: { onSwitchMode?: () => void })
       <style>{`
         @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
         @keyframes pulseGlow{0%,100%{box-shadow:0 0 20px rgba(195,107,255,0.3)}50%{box-shadow:0 0 40px rgba(195,107,255,0.6)}}
+        @keyframes timerPulse{0%,100%{opacity:0.5;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}}
         .ep-tab:hover{color:var(--text)!important}
         .ep-stat:hover{border-color:rgba(195,107,255,0.4)!important;transform:translateY(-2px)}
         .ep-sub-btn:hover{border-color:#C36BFF!important;color:#C36BFF!important}
         .ep-input:focus{border-color:rgba(195,107,255,0.5)!important;outline:none!important}
         .ep-hide-scrollbar::-webkit-scrollbar { display: none; }
         @media (max-width: 680px) {
-          .ep-header-wrap { flex-direction: column !important; align-items: stretch !important; gap: 16px !important; }
+          .ep-header-wrap { flex-direction: column !important; align-items: stretch !important; gap: 12px !important; }
           .ep-header-actions { flex-wrap: wrap !important; justify-content: flex-start !important; }
         }
         @media (max-width: 480px) {
@@ -1274,7 +1852,7 @@ function CompetitiveExamPlanner({ onSwitchMode }: { onSwitchMode?: () => void })
       `}</style>
 
       {/* ── Header ── */}
-      <header style={{ position: "sticky", top: 0, zIndex: 50, padding: "12px 20px", background: "var(--bg-card)", backdropFilter: "blur(20px)", borderBottom: "1px solid var(--border)" }}>
+      <header style={{ position: "sticky", top: 0, zIndex: 50, padding: "12px 20px 0 20px", background: "var(--bg-card)", backdropFilter: "blur(20px)" }}>
         <div className="ep-header-wrap" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <button onClick={() => router.push("/choose")} style={{ background: "none", border: "1px solid var(--border)", borderRadius: 7, color: "var(--text-muted)", padding: "5px 12px", cursor: "pointer", fontFamily: "var(--font)", fontSize: "0.72rem", fontWeight: 600, transition: "all 0.18s" }}
@@ -1329,7 +1907,7 @@ function CompetitiveExamPlanner({ onSwitchMode }: { onSwitchMode?: () => void })
 
       </header>
 
-      <main style={{ width: "100%", padding: "20px 16px 80px" }}>
+      <main style={{ width: "100%", padding: "16px 16px 80px" }}>
 
         {/* ── DASHBOARD ── */}
         {activeTab === "dashboard" && (
@@ -2304,6 +2882,11 @@ function CompetitiveExamPlanner({ onSwitchMode }: { onSwitchMode?: () => void })
           </div>
         </div>
       )}
+        {/* ── TEST TRACKER ── */}
+        {activeTab === "tracker" && (
+          <TestTrackerTab goTests={store.goTests ?? DEFAULT_GO_TESTS} onUpdate={(tests: GOTest[]) => updateStore(s => ({ ...s, goTests: tests }))} />
+        )}
+
     </div>
   );
 }
