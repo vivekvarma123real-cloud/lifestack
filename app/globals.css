@@ -786,3 +786,36 @@ video {
     flex-shrink: 0 !important;
   }
 }
+
+/* ── Winter Arc Animations ─────────────────────────────────────────────────── */
+@keyframes snowfall {
+  0% {
+    transform: translateY(-10px) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(60px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.winter-snowflake {
+  animation: snowfall 4s linear infinite;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+@keyframes winter-pulse {
+  0%, 100% {
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+  50% {
+    box-shadow: 0 4px 30px rgba(102, 126, 234, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+}
+
+.winter-arc-banner {
+  animation: winter-pulse 3s ease-in-out infinite;
+}

@@ -46,6 +46,56 @@ const DAY_BG_LIGHT: Record<string,string> = {
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const YEARS  = [2026, 2027, 2028];
+
+// ─── Winter Arc ───────────────────────────────────────────────────────────────
+const WINTER_ARC_START = new Date(2026, 8, 1); // Sep 1, 2026
+const getWinterArcDay = (date: Date): number | null => {
+  const start = new Date(WINTER_ARC_START);
+  start.setHours(0,0,0,0);
+  const d = new Date(date);
+  d.setHours(0,0,0,0);
+  if (d < start) return null;
+  const diff = Math.floor((d.getTime() - start.getTime()) / (1000*60*60*24));
+  return diff + 1;
+};
+
+const WINTER_ARC_RULES = [
+  { icon: "🌅", rule: "Wake up before 6 AM" },
+  { icon: "🏋️", rule: "Gym 5x a week" },
+  { icon: "🚀", rule: "Daily min. 1 hour new skill" },
+  { icon: "🎯", rule: "Min 6 hr working in silence to your focused goal" },
+  { icon: "🚫", rule: "No junk food" },
+  { icon: "📖", rule: "Read any book daily" },
+  { icon: "🧘", rule: "Meditation" },
+  { icon: "💧", rule: "Drink at least 3-4 litres of water" },
+  { icon: "📵", rule: "Less usage of social media" },
+  { icon: "📝", rule: "Track habits daily" },
+];
+
+const WINTER_ARC_HABITS = [
+  "Wake up before 6 AM",
+  "Gym",
+  "Daily 1 hr new skill",
+  "Min 6 hr to your focused goal",
+  "Read book daily",
+  "Meditation",
+  "No junk",
+  "Drink at least 4 litres of water",
+  "Less usage of mobile (less than 2 hours)",
+];
+
+const WINTER_ARC_CAT = (ds: string): Category => ({
+  id: `${ds}-winterarc`,
+  icon: "star",
+  name: "❄️ WINTER ARC CHALLENGE",
+  collapsed: false,
+  habits: WINTER_ARC_HABITS.map((label, i) => ({
+    id: `${ds}-wa-${i}`,
+    label,
+    done: false,
+  })),
+});
+
 const JS_DAY_TO_NAME = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 const STORAGE_KEY = "lifestack-habits-v2";
 
@@ -290,12 +340,34 @@ function DayCard({ entry,onToggleHabit,onToggleCollapse,onAddHabit,onAddHabitToW
   const dayDot = theme==='light' ? (DAY_META[entry.dayName]?.dotLight||"#9333ea") : (DAY_META[entry.dayName]?.dotDark||"#C36BFF");
   const dayNameColor = theme==='light' ? "#1e1e2d" : "#ffffff";
   const dayDateColor = theme==='light' ? "rgba(30,30,45,0.55)" : "rgba(255,255,255,0.45)";
+  const winterDay = getWinterArcDay(entry.date);
   return (
     <div style={{ background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:12,display:"flex",flexDirection:"column",height:"100%" }}>
       <div style={{ display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:dayBg,borderRadius:"11px 11px 0 0",borderBottom:"1px solid var(--bg-subtle)" }}>
         <span style={{ width:9,height:9,borderRadius:"50%",flexShrink:0,background:dayDot,boxShadow:`0 0 8px ${dayDot}88` }}/>
         <div style={{ flex:1 }}>
-          <div style={{ fontFamily:"var(--font)",fontWeight:700,fontSize:"0.84rem",letterSpacing:"0.08em",color:dayNameColor,textTransform:"uppercase" }}>{entry.dayName}</div>
+          <div style={{ display:"flex",alignItems:"center",gap:6 }}>
+            <span style={{ fontFamily:"var(--font)",fontWeight:700,fontSize:"0.84rem",letterSpacing:"0.08em",color:dayNameColor,textTransform:"uppercase" }}>{entry.dayName}</span>
+            {winterDay !== null && entry.categories.some(c => c.id.includes('winterarc')) && (
+              <span style={{
+                fontFamily:"var(--font)",
+                fontSize:"0.5rem",
+                fontWeight:800,
+                letterSpacing:"0.1em",
+                textTransform:"uppercase",
+                background: theme === 'light'
+                  ? "linear-gradient(135deg, #1a1a2e, #16213e)"
+                  : "linear-gradient(135deg, #667eea, #764ba2)",
+                color:"#fff",
+                padding:"2px 7px",
+                borderRadius:20,
+                whiteSpace:"nowrap",
+                boxShadow: theme === 'light'
+                  ? "0 2px 8px rgba(0,0,0,0.15)"
+                  : "0 2px 8px rgba(102,126,234,0.3)",
+              }}>❄️ DAY {winterDay}</span>
+            )}
+          </div>
           <div style={{ fontFamily:"var(--font)",fontSize:"0.62rem",fontWeight:500,color:dayDateColor,marginTop:1 }}>{dd} {mm}</div>
         </div>
         <span style={{ fontFamily:"var(--font)",fontSize:"0.72rem",fontWeight:600,color:"var(--text-sub)" }}>
@@ -440,6 +512,9 @@ export default function HabitTrackerPage() {
   const saveTimer = useRef<any>(null);
   const [copyConfirmDs, setCopyConfirmDs] = useState<string | null>(null);
   const [showAnalytics, setShowAnalytics] = useState(true);
+  const [showWinterRules, setShowWinterRules] = useState(false);
+  const [winterArcEnabled, setWinterArcEnabled] = useState<boolean | null>(null); // null = not decided yet
+  const [showWinterArcModal, setShowWinterArcModal] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.innerWidth < 768) {
@@ -454,6 +529,16 @@ export default function HabitTrackerPage() {
       if (savedTheme === "light" || savedTheme === "dark") {
         setTheme(savedTheme);
         document.documentElement.setAttribute("data-theme", savedTheme);
+      }
+    } catch (e) {}
+
+    try {
+      const savedWA = localStorage.getItem("winter-arc-status-v2");
+      if (savedWA !== null) {
+        setWinterArcEnabled(savedWA === "true");
+      } else {
+        // First visit - show the modal
+        setShowWinterArcModal(true);
       }
     } catch (e) {}
 
@@ -521,13 +606,36 @@ export default function HabitTrackerPage() {
   const dayEntries: DayEntry[] = currentWeekDates.map(date=>{
     const ds=dateKey(date), name=JS_DAY_TO_NAME[date.getDay()];
     const saved = store[ds]?.categories;
-    return { dayName:name,date,dateStr:ds,categories:(saved && saved.length>0)?saved:DEFAULT_CATS(ds) };
+    let cats = (saved && saved.length>0)?saved:DEFAULT_CATS(ds);
+    // Auto-add or filter Winter Arc category based on opt-in
+    if (winterArcEnabled && getWinterArcDay(date) !== null) {
+      cats = cats.filter(c => !["rich", "muscular", "intelligent"].some(key => c.id.includes(key)));
+      if (!cats.some(c => c.id.includes('winterarc'))) {
+        cats = [WINTER_ARC_CAT(ds), ...cats];
+      }
+    } else if (!winterArcEnabled) {
+      // Hide winter arc if they haven't explicitly opted in (covers false and null)
+      cats = cats.filter(c => !c.id.includes('winterarc'));
+    }
+    return { dayName:name,date,dateStr:ds,categories:cats };
   });
 
   const updateDay = useCallback((ds:string,fn:(c:Category[])=>Category[])=>{
     setStore(p=>{
       const existing = p[ds]?.categories;
-      const base = (existing && existing.length>0) ? existing : DEFAULT_CATS(ds);
+      let base = (existing && existing.length>0) ? existing : DEFAULT_CATS(ds);
+      
+      const [y, m, d] = ds.split('-');
+      const date = new Date(Number(y), Number(m)-1, Number(d));
+      if (winterArcEnabled && getWinterArcDay(date) !== null) {
+        base = base.filter(c => !["rich", "muscular", "intelligent"].some(key => c.id.includes(key)));
+        if (!base.some(c => c.id.includes('winterarc'))) {
+          base = [WINTER_ARC_CAT(ds), ...base];
+        }
+      } else if (!winterArcEnabled) {
+        base = base.filter(c => !c.id.includes('winterarc'));
+      }
+
       const newCats = fn(base);
       const newStore = { ...p,[ds]:{ categories:newCats } };
       const uid = userIdRef.current;
@@ -543,7 +651,7 @@ export default function HabitTrackerPage() {
       }
       return newStore;
     });
-  },[]);
+  },[winterArcEnabled]);
 
   const toggleHabit    = useCallback((ds:string,catId:string,hId:string)=>{ updateDay(ds,cats=>cats.map(c=>c.id!==catId?c:{...c,habits:c.habits.map(h=>h.id!==hId?h:{...h,done:!h.done})})); },[updateDay]);
   const toggleCollapse = useCallback((ds:string,catId:string)=>{ updateDay(ds,cats=>cats.map(c=>c.id!==catId?c:{...c,collapsed:!c.collapsed})); },[updateDay]);
@@ -603,6 +711,18 @@ export default function HabitTrackerPage() {
     });
   }, []);
 
+  const enableWinterArc = useCallback(() => {
+    setWinterArcEnabled(true);
+    setShowWinterArcModal(false);
+    try { localStorage.setItem("winter-arc-status-v2", "true"); } catch(e) {}
+  }, []);
+
+  const disableWinterArc = useCallback(() => {
+    setWinterArcEnabled(false);
+    setShowWinterArcModal(false);
+    try { localStorage.setItem("winter-arc-status-v2", "false"); } catch(e) {}
+  }, []);
+
   const allHabits = dayEntries.flatMap(d=>d.categories.flatMap(c=>c.habits));
   const totalDone = allHabits.filter(h=>h.done).length;
   const weekPct   = allHabits.length?Math.round(totalDone/allHabits.length*100):0;
@@ -618,6 +738,22 @@ export default function HabitTrackerPage() {
     const ds=dateKey(date), cats=store[ds]?.categories??DEFAULT_CATS(ds), all=cats.flatMap(c=>c.habits);
     return { label:JS_DAY_TO_NAME[date.getDay()],date:`${date.getDate()} ${MONTHS[date.getMonth()]}`,value:all.length?Math.round(all.filter(h=>h.done).length/all.length*100):0 };
   }),[store,currentWeekDates]);
+
+  const winterArcStats = useMemo(() => {
+    if (!winterArcEnabled) return null;
+    const stats = currentWeekDates.map(date => {
+      const ds = dateKey(date);
+      const cats = store[ds]?.categories ?? [];
+      const waCat = cats.find(c => c.id.includes('winterarc'));
+      if (!waCat) return { day: JS_DAY_TO_NAME[date.getDay()].slice(0,3), date: `${date.getDate()} ${MONTHS[date.getMonth()]}`, done: 0, total: WINTER_ARC_HABITS.length };
+      const done = waCat.habits.filter(h => h.done).length;
+      return { day: JS_DAY_TO_NAME[date.getDay()].slice(0,3), date: `${date.getDate()} ${MONTHS[date.getMonth()]}`, done, total: waCat.habits.length };
+    });
+    const totalDone = stats.reduce((a,s) => a + s.done, 0);
+    const totalAll = stats.reduce((a,s) => a + s.total, 0);
+    const overallPct = totalAll > 0 ? Math.round(totalDone / totalAll * 100) : 0;
+    return { stats, totalDone, totalAll, overallPct };
+  }, [winterArcEnabled, store, currentWeekDates]);
 
   const weekDates  = weeksInMonth[safeWeek]??[];
   const rangeLabel = weekDates.length>0?`${weekDates[0].getDate()} ${MONTHS[weekDates[0].getMonth()]} – ${weekDates[weekDates.length-1].getDate()} ${MONTHS[weekDates[weekDates.length-1].getMonth()]}`:"";
@@ -649,6 +785,15 @@ export default function HabitTrackerPage() {
           </div>
           <div style={{ display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4 }}>
             <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+              <button 
+                onClick={() => setShowWinterArcModal(true)} 
+                title="Winter Arc Settings" 
+                style={{ background:"var(--bg-subtle)", border:"1px solid var(--border)", borderRadius:"50%", width: 28, height: 28, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"var(--text-sub)", transition:"all 0.2s", fontSize: "0.8rem" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color="var(--grad-mid)"; (e.currentTarget as HTMLElement).style.borderColor="var(--border-act)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color="var(--text-sub)"; (e.currentTarget as HTMLElement).style.borderColor="var(--border)"; }}
+              >
+                ❄️
+              </button>
               <button onClick={toggleTheme} title="Toggle Dark/Light Mode" style={{ background:"var(--bg-subtle)", border:"1px solid var(--border)", borderRadius:"50%", width: 28, height: 28, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"var(--text-sub)", transition:"all 0.2s" }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color="var(--grad-mid)"; (e.currentTarget as HTMLElement).style.borderColor="var(--border-act)"; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color="var(--text-sub)"; (e.currentTarget as HTMLElement).style.borderColor="var(--border)"; }}
@@ -694,40 +839,218 @@ export default function HabitTrackerPage() {
         </div>
       </header>
 
-      {/* ── Toggle Analytics Bar ── */}
-      <div className="analytics-toggle-container" style={{ margin: "16px 12px 0" }}>
-        <button 
-          onClick={() => setShowAnalytics(prev => !prev)}
+      {/* ── Winter Arc Banner ── */}
+      {winterArcEnabled && (
+      <div style={{ margin: "16px 12px 0" }}>
+        <button
+          onClick={() => setShowWinterRules(v => !v)}
+          className="winter-arc-banner"
           style={{
             width: "100%",
-            padding: "10px 16px",
-            background: "var(--bg-card)",
-            border: "1px solid var(--border)",
-            borderRadius: 12,
+            padding: "14px 20px",
+            background: theme === 'light'
+              ? "linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%)"
+              : "linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)",
+            border: theme === 'light' ? "1px solid rgba(22,33,62,0.3)" : "1px solid rgba(102,126,234,0.3)",
+            borderRadius: 14,
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            fontFamily: "var(--font)",
-            fontSize: "0.74rem",
-            fontWeight: 700,
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-            color: "var(--text-sub)",
-            transition: "all 0.2s ease",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.05)"
+            justifyContent: "space-between",
+            gap: 12,
+            position: "relative",
+            overflow: "hidden",
+            boxShadow: theme === 'light'
+              ? "0 4px 20px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.1)"
+              : "0 4px 20px rgba(102,126,234,0.15), inset 0 1px 0 rgba(255,255,255,0.05)",
+            transition: "all 0.3s ease",
           }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--border-act)"; (e.currentTarget as HTMLElement).style.color = "var(--text)"; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--border)"; (e.currentTarget as HTMLElement).style.color = "var(--text-sub)"; }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLElement).style.boxShadow = theme === 'light'
+              ? "0 8px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.15)"
+              : "0 8px 30px rgba(102,126,234,0.3), inset 0 1px 0 rgba(255,255,255,0.08)";
+            (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)";
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLElement).style.boxShadow = theme === 'light'
+              ? "0 4px 20px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.1)"
+              : "0 4px 20px rgba(102,126,234,0.15), inset 0 1px 0 rgba(255,255,255,0.05)";
+            (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
+          }}
         >
-          <span>{showAnalytics ? "Hide Analytics 📊" : "Show Analytics 📊"}</span>
-          <span style={{ transition: "transform 0.2s", display: "inline-block", transform: showAnalytics ? "rotate(180deg)" : "rotate(0deg)" }}>▼</span>
+          {/* Snowflake particles */}
+          <div style={{ position:"absolute", top:0, left:0, right:0, bottom:0, pointerEvents:"none", overflow:"hidden" }}>
+            {[...Array(6)].map((_,i) => (
+              <span key={i} className="winter-snowflake" style={{
+                position:"absolute",
+                fontSize: `${8 + Math.random() * 6}px`,
+                left: `${10 + i * 16}%`,
+                top: `-10px`,
+                opacity: 0.3 + Math.random() * 0.3,
+                animationDelay: `${i * 0.8}s`,
+              }}>❄</span>
+            ))}
+          </div>
+          <div style={{ display:"flex", alignItems:"center", gap:12, zIndex:1 }}>
+            <span style={{ fontSize:"1.5rem" }}>❄️</span>
+            <div style={{ textAlign:"left" }}>
+              <div style={{
+                fontFamily:"var(--font)",
+                fontSize:"0.95rem",
+                fontWeight:900,
+                letterSpacing:"0.14em",
+                textTransform:"uppercase",
+                color:"#fff",
+                textShadow:"0 2px 10px rgba(102,126,234,0.5)",
+              }}>🔥 WINTER ARC STARTED 🔥</div>
+              <div style={{
+                fontFamily:"var(--font)",
+                fontSize:"0.65rem",
+                fontWeight:500,
+                color:"rgba(255,255,255,0.6)",
+                letterSpacing:"0.08em",
+                marginTop:2,
+              }}>Tap to view the rules · No excuses · Become unstoppable</div>
+            </div>
+          </div>
+          <div style={{ display:"flex", alignItems:"center", gap:6, zIndex:1 }}>
+            <span style={{
+              fontFamily:"var(--font)",
+              fontSize:"0.6rem",
+              fontWeight:700,
+              color:"rgba(255,255,255,0.5)",
+              letterSpacing:"0.1em",
+              textTransform:"uppercase",
+            }}>{showWinterRules ? "HIDE" : "RULES"}</span>
+            <span style={{
+              transition:"transform 0.3s",
+              transform: showWinterRules ? "rotate(180deg)" : "rotate(0deg)",
+              color:"rgba(255,255,255,0.6)",
+              fontSize:"0.7rem",
+            }}>▼</span>
+          </div>
         </button>
+
+        {/* Winter Arc Rules Panel */}
+        <div style={{
+          maxHeight: showWinterRules ? "1000px" : "0px",
+          overflow: "hidden",
+          transition: "max-height 0.5s ease, opacity 0.3s ease, margin 0.3s ease",
+          opacity: showWinterRules ? 1 : 0,
+          marginTop: showWinterRules ? 8 : 0,
+        }}>
+          <div style={{
+            background: theme === 'light'
+              ? "linear-gradient(145deg, #f8f9ff 0%, #e8ecf4 100%)"
+              : "linear-gradient(145deg, rgba(15,12,41,0.95) 0%, rgba(48,43,99,0.6) 100%)",
+            border: theme === 'light' ? "1px solid rgba(22,33,62,0.15)" : "1px solid rgba(102,126,234,0.2)",
+            borderRadius: 12,
+            padding: "16px 18px",
+            backdropFilter: "blur(10px)",
+          }}>
+            <div style={{
+              fontFamily:"var(--font)",
+              fontSize:"0.7rem",
+              fontWeight:800,
+              letterSpacing:"0.12em",
+              textTransform:"uppercase",
+              color: theme === 'light' ? "#1a1a2e" : "rgba(255,255,255,0.7)",
+              marginBottom:12,
+              display:"flex",
+              alignItems:"center",
+              gap:6,
+            }}>
+              <span>⚔️</span> THE 10 COMMANDMENTS OF WINTER ARC
+            </div>
+            <div style={{ display:"grid", gap:6 }}>
+              {WINTER_ARC_RULES.map((r, i) => (
+                <div key={i} style={{
+                  display:"flex",
+                  alignItems:"center",
+                  gap:10,
+                  padding:"8px 12px",
+                  borderRadius:8,
+                  background: theme === 'light'
+                    ? "rgba(0,0,0,0.03)"
+                    : "rgba(255,255,255,0.03)",
+                  border: theme === 'light'
+                    ? "1px solid rgba(0,0,0,0.06)"
+                    : "1px solid rgba(255,255,255,0.06)",
+                  transition:"all 0.2s",
+                }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLElement).style.background = theme === 'light'
+                      ? "rgba(0,0,0,0.06)"
+                      : "rgba(102,126,234,0.1)";
+                    (e.currentTarget as HTMLElement).style.borderColor = theme === 'light'
+                      ? "rgba(0,0,0,0.12)"
+                      : "rgba(102,126,234,0.25)";
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLElement).style.background = theme === 'light'
+                      ? "rgba(0,0,0,0.03)"
+                      : "rgba(255,255,255,0.03)";
+                    (e.currentTarget as HTMLElement).style.borderColor = theme === 'light'
+                      ? "rgba(0,0,0,0.06)"
+                      : "rgba(255,255,255,0.06)";
+                  }}
+                >
+                  <span style={{
+                    fontSize:"0.9rem",
+                    width:28,
+                    height:28,
+                    display:"flex",
+                    alignItems:"center",
+                    justifyContent:"center",
+                    borderRadius:6,
+                    background: theme === 'light'
+                      ? "rgba(22,33,62,0.08)"
+                      : "rgba(102,126,234,0.12)",
+                    flexShrink:0,
+                  }}>{r.icon}</span>
+                  <span style={{
+                    fontFamily:"var(--font)",
+                    fontSize:"0.75rem",
+                    fontWeight:600,
+                    color: theme === 'light' ? "#1a1a2e" : "rgba(255,255,255,0.85)",
+                    lineHeight:1.3,
+                  }}>{r.rule}</span>
+                  <span style={{
+                    marginLeft:"auto",
+                    fontFamily:"var(--font)",
+                    fontSize:"0.55rem",
+                    fontWeight:700,
+                    color: theme === 'light' ? "rgba(22,33,62,0.35)" : "rgba(255,255,255,0.2)",
+                    letterSpacing:"0.1em",
+                    flexShrink:0,
+                  }}>#{String(i+1).padStart(2,'0')}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{
+              marginTop:14,
+              padding:"10px 14px",
+              borderRadius:8,
+              background: theme === 'light'
+                ? "linear-gradient(135deg, #1a1a2e, #16213e)"
+                : "linear-gradient(135deg, rgba(102,126,234,0.15), rgba(118,75,162,0.15))",
+              border: theme === 'light' ? "1px solid rgba(22,33,62,0.2)" : "1px solid rgba(102,126,234,0.2)",
+              textAlign:"center",
+            }}>
+              <span style={{
+                fontFamily:"var(--font)",
+                fontSize:"0.68rem",
+                fontWeight:700,
+                letterSpacing:"0.1em",
+                color: theme === 'light' ? "#fff" : "rgba(255,255,255,0.7)",
+              }}>"THE PAIN OF DISCIPLINE IS NOTHING COMPARED TO THE PAIN OF REGRET" 💪</span>
+            </div>
+          </div>
+        </div>
       </div>
+      )}
 
       {/* ── Analytics ── */}
-      {showAnalytics && (
         <section className="habit-tracker-analytics" style={{ margin:"16px 12px 0",background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:14,padding:"14px 16px",display:"grid",gridTemplateColumns:"1fr 1px 1fr 1px auto",gap:"0 16px",alignItems:"stretch" }}>
           <div className="analytics-line-chart">
             <div style={{ display:"flex",alignItems:"baseline",gap:7,marginBottom:8 }}>
@@ -751,7 +1074,6 @@ export default function HabitTrackerPage() {
             <span style={{ fontFamily:"var(--font)",fontSize:"0.78rem",fontWeight:600,color:"var(--text-sub)",textAlign:"center" }}>{totalDone}/{allHabits.length} habits</span>
           </div>
         </section>
-      )}
 
       {/* ── Habit Grid ── */}
       <main style={{ padding:"12px 12px 80px" }}>
@@ -793,6 +1115,84 @@ export default function HabitTrackerPage() {
           {MONTHS[selMonth]} {selYear} · Week {safeWeek+1} · {rangeLabel} · {weekPct}% complete · {totalDone}/{allHabits.length} done
         </span>
       </footer>
+
+      {showWinterArcModal && (
+        <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.7)", backdropFilter:"blur(8px)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+          <div style={{
+            background: theme === 'light'
+              ? "linear-gradient(145deg, #ffffff 0%, #f0f2ff 100%)"
+              : "linear-gradient(145deg, #0f0c29 0%, #1a1a3e 50%, #24243e 100%)",
+            border: theme === 'light' ? "1px solid rgba(22,33,62,0.15)" : "1px solid rgba(102,126,234,0.3)",
+            borderRadius:20,
+            padding:"32px 28px",
+            maxWidth:420,
+            width:"100%",
+            boxShadow: theme === 'light'
+              ? "0 20px 60px rgba(0,0,0,0.15)"
+              : "0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(102,126,234,0.1)",
+            textAlign:"center",
+          }}>
+            <div style={{ fontSize:"3rem", marginBottom:12 }}>❄️🔥</div>
+            <h2 style={{
+              fontFamily:"var(--font)",
+              fontSize:"1.3rem",
+              fontWeight:900,
+              letterSpacing:"0.12em",
+              textTransform:"uppercase",
+              color: theme === 'light' ? "#1a1a2e" : "#fff",
+              marginBottom:8,
+              textShadow: theme === 'light' ? "none" : "0 2px 10px rgba(102,126,234,0.3)",
+            }}>Winter Arc Challenge</h2>
+            <p style={{
+              fontFamily:"var(--font)",
+              fontSize:"0.82rem",
+              fontWeight:500,
+              color: theme === 'light' ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.6)",
+              lineHeight:1.6,
+              marginBottom:20,
+            }}>Are you ready to transform yourself? The Winter Arc is a self-improvement challenge starting Sep 1. No excuses, no shortcuts — just pure discipline.</p>
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              <button onClick={enableWinterArc} style={{
+                fontFamily:"var(--font)",
+                fontSize:"0.85rem",
+                fontWeight:800,
+                letterSpacing:"0.1em",
+                textTransform:"uppercase",
+                padding:"14px 24px",
+                borderRadius:12,
+                border:"none",
+                cursor:"pointer",
+                color:"#fff",
+                background: theme === 'light'
+                  ? "linear-gradient(135deg, #1a1a2e 0%, #302b63 100%)"
+                  : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                boxShadow: theme === 'light'
+                  ? "0 4px 15px rgba(26,26,46,0.3)"
+                  : "0 4px 15px rgba(102,126,234,0.4)",
+                transition:"all 0.2s ease",
+              }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLElement).style.boxShadow = theme === 'light' ? "0 8px 25px rgba(26,26,46,0.4)" : "0 8px 25px rgba(102,126,234,0.5)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLElement).style.boxShadow = theme === 'light' ? "0 4px 15px rgba(26,26,46,0.3)" : "0 4px 15px rgba(102,126,234,0.4)"; }}
+              >🔥 Yes, I&apos;m in! Let&apos;s go!</button>
+              <button onClick={disableWinterArc} style={{
+                fontFamily:"var(--font)",
+                fontSize:"0.78rem",
+                fontWeight:600,
+                padding:"12px 24px",
+                borderRadius:12,
+                border: theme === 'light' ? "1px solid rgba(0,0,0,0.15)" : "1px solid rgba(255,255,255,0.15)",
+                cursor:"pointer",
+                color: theme === 'light' ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.4)",
+                background:"transparent",
+                transition:"all 0.2s ease",
+              }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = theme === 'light' ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.3)"; (e.currentTarget as HTMLElement).style.color = theme === 'light' ? "rgba(0,0,0,0.7)" : "rgba(255,255,255,0.6)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = theme === 'light' ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.15)"; (e.currentTarget as HTMLElement).style.color = theme === 'light' ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.4)"; }}
+              >No thanks, keep it normal</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
