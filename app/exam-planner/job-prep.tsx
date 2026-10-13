@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -85,7 +85,7 @@ const DEFAULT_STORE: Store = {
 const TRACK_COLORS: Record<string, string> = {
   'DSA/Problem Solving': '#3B82F6', // Blue
   'Web Development': '#10B981', // Green
-  'Data Science/ML': '#8B5CF6', // Purple
+  'Data Science/ML': 'var(--color-teal-light)', // Purple
   'System Design': '#F59E0B', // Orange
   'DevOps/Cloud': '#14B8A6', // Teal
   'Android/iOS': '#EC4899', // Pink
@@ -191,42 +191,42 @@ export default function JobPrepPlanner({ onSwitchMode }: { onSwitchMode: () => v
   return (
     <div style={{ minHeight: '100vh', background: '#030712', color: '#E2E8F0', fontFamily: 'var(--font)', display: 'flex', flexDirection: 'row' }}>
       {/* Background ambient glows */}
-      <div style={{position:'fixed',top:'-10%',left:'-5%',width:600,height:600,borderRadius:'50%',background:'radial-gradient(circle,rgba(99,102,241,0.08),transparent 70%)',filter:'blur(60px)',pointerEvents:'none',zIndex:0}}/>
+      <div style={{position:'fixed',top:'-10%',left:'-5%',width:600,height:600,borderRadius:'50%',background:'radial-gradient(circle,rgba(var(--color-teal-rgb),0.08),transparent 70%)',filter:'blur(60px)',pointerEvents:'none',zIndex:0}}/>
       <div style={{position:'fixed',bottom:'-10%',right:'-5%',width:700,height:700,borderRadius:'50%',background:'radial-gradient(circle,rgba(236,72,153,0.06),transparent 70%)',filter:'blur(60px)',pointerEvents:'none',zIndex:0}}/>
       <style>{`
         @keyframes jpFadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes jpSlideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes jpPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(139,92,246,0.4); } 50% { box-shadow: 0 0 0 10px rgba(139,92,246,0); } }
+        @keyframes jpPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(var(--color-teal-light-rgb),0.4); } 50% { box-shadow: 0 0 0 10px rgba(var(--color-teal-light-rgb),0); } }
         @keyframes jpGlow { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
         @keyframes jpFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
         @keyframes jpShimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
-        @keyframes jpBorderGlow { 0%,100% { border-color: rgba(139,92,246,0.2); } 50% { border-color: rgba(236,72,153,0.4); } }
+        @keyframes jpBorderGlow { 0%,100% { border-color: rgba(var(--color-teal-light-rgb),0.2); } 50% { border-color: rgba(236,72,153,0.4); } }
         .jp-sidebar { width: 68px; min-height: 100vh; background: rgba(6,10,23,0.95); border-right: 1px solid rgba(255,255,255,0.06); display: flex; flex-direction: column; align-items: center; padding: 16px 0; gap: 4px; position: sticky; top: 0; z-index: 50; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
         .jp-sidebar-item { width: 44px; height: 44px; border-radius: 14px; cursor: pointer; transition: all 0.3s cubic-bezier(0.4,0,0.2,1); display: flex; align-items: center; justify-content: center; color: #475569; position: relative; border: 1px solid transparent; }
-        .jp-sidebar-item:hover { background: rgba(139,92,246,0.08); color: #A78BFA; transform: scale(1.08); border-color: rgba(139,92,246,0.15); }
-        .jp-sidebar-item.active { background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(236,72,153,0.12)); color: #A78BFA; border-color: rgba(139,92,246,0.35); box-shadow: 0 0 20px rgba(139,92,246,0.15), inset 0 0 12px rgba(139,92,246,0.05); }
-        .jp-sidebar-item.active::before { content: ''; position: absolute; left: -10px; top: 50%; transform: translateY(-50%); width: 3px; height: 24px; background: linear-gradient(180deg, #8B5CF6, #EC4899); border-radius: 0 3px 3px 0; }
-        .jp-sidebar-item .jp-tooltip { position: absolute; left: 58px; background: rgba(15,23,42,0.95); border: 1px solid rgba(139,92,246,0.3); color: #E2E8F0; padding: 6px 12px; border-radius: 8px; font-size: 0.72rem; font-weight: 700; white-space: nowrap; pointer-events: none; opacity: 0; transform: translateX(-8px); transition: all 0.2s ease; z-index: 100; letter-spacing: 0.02em; }
+        .jp-sidebar-item:hover { background: rgba(var(--color-teal-light-rgb),0.08); color: #A78BFA; transform: scale(1.08); border-color: rgba(var(--color-teal-light-rgb),0.15); }
+        .jp-sidebar-item.active { background: linear-gradient(135deg, rgba(var(--color-teal-light-rgb),0.2), rgba(236,72,153,0.12)); color: #A78BFA; border-color: rgba(var(--color-teal-light-rgb),0.35); box-shadow: 0 0 20px rgba(var(--color-teal-light-rgb),0.15), inset 0 0 12px rgba(var(--color-teal-light-rgb),0.05); }
+        .jp-sidebar-item.active::before { content: ''; position: absolute; left: -10px; top: 50%; transform: translateY(-50%); width: 3px; height: 24px; background: linear-gradient(180deg, var(--color-teal-light), #EC4899); border-radius: 0 3px 3px 0; }
+        .jp-sidebar-item .jp-tooltip { position: absolute; left: 58px; background: rgba(15,23,42,0.95); border: 1px solid rgba(var(--color-teal-light-rgb),0.3); color: #E2E8F0; padding: 6px 12px; border-radius: 8px; font-size: 0.72rem; font-weight: 700; white-space: nowrap; pointer-events: none; opacity: 0; transform: translateX(-8px); transition: all 0.2s ease; z-index: 100; letter-spacing: 0.02em; }
         .jp-sidebar-item:hover .jp-tooltip { opacity: 1; transform: translateX(0); }
         .jp-card { background: rgba(10,15,36,0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.06); border-radius: 20px; padding: 24px; transition: all 0.3s cubic-bezier(0.4,0,0.2,1); animation: jpFadeIn 0.4s ease both; }
-        .jp-card:hover { border-color: rgba(139,92,246,0.2); box-shadow: 0 8px 32px rgba(0,0,0,0.2), 0 0 0 1px rgba(139,92,246,0.05); }
+        .jp-card:hover { border-color: rgba(var(--color-teal-light-rgb),0.2); box-shadow: 0 8px 32px rgba(0,0,0,0.2), 0 0 0 1px rgba(var(--color-teal-light-rgb),0.05); }
         .jp-stat-card { background: rgba(10,15,36,0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.06); border-radius: 20px; padding: 24px; position: relative; overflow: hidden; transition: all 0.3s cubic-bezier(0.4,0,0.2,1); animation: jpFadeIn 0.35s ease both; }
         .jp-stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 20px 20px 0 0; }
-        .jp-stat-card:hover { transform: translateY(-4px); border-color: rgba(139,92,246,0.2); box-shadow: 0 16px 48px rgba(0,0,0,0.3), 0 0 24px rgba(139,92,246,0.08); }
+        .jp-stat-card:hover { transform: translateY(-4px); border-color: rgba(var(--color-teal-light-rgb),0.2); box-shadow: 0 16px 48px rgba(0,0,0,0.3), 0 0 24px rgba(var(--color-teal-light-rgb),0.08); }
         .jp-input { background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #E2E8F0; padding: 12px 16px; font-family: var(--font); font-size: 0.88rem; width: 100%; outline: none; transition: all 0.25s ease; box-sizing: border-box; }
-        .jp-input:focus { border-color: #8B5CF6; box-shadow: 0 0 0 3px rgba(139,92,246,0.12); }
+        .jp-input:focus { border-color: var(--color-teal-light); box-shadow: 0 0 0 3px rgba(var(--color-teal-light-rgb),0.12); }
         .jp-input::placeholder { color: #475569; }
-        .jp-btn { background: linear-gradient(135deg, #8B5CF6, #6366F1); color: white; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 700; font-size: 0.88rem; cursor: pointer; transition: all 0.25s ease; letter-spacing: 0.02em; }
-        .jp-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(139,92,246,0.35); }
+        .jp-btn { background: linear-gradient(135deg, var(--color-teal-light), var(--color-teal)); color: white; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 700; font-size: 0.88rem; cursor: pointer; transition: all 0.25s ease; letter-spacing: 0.02em; }
+        .jp-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(var(--color-teal-light-rgb),0.35); }
         .jp-badge { font-size: 0.68rem; padding: 4px 10px; border-radius: 100px; font-weight: 700; letter-spacing: 0.02em; }
         .jp-section-title { display: flex; align-items: center; gap: 10px; font-size: 1.1rem; font-weight: 800; margin-bottom: 20px; letter-spacing: -0.01em; }
         .jp-task-row { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: rgba(255,255,255,0.02); border-radius: 14px; border: 1px solid rgba(255,255,255,0.04); transition: all 0.25s ease; }
-        .jp-task-row:hover { background: rgba(139,92,246,0.04); border-color: rgba(139,92,246,0.12); transform: translateX(2px); }
+        .jp-task-row:hover { background: rgba(var(--color-teal-light-rgb),0.04); border-color: rgba(var(--color-teal-light-rgb),0.12); transform: translateX(2px); }
         .jp-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 24px; animation: jpFadeIn 0.2s ease; }
-        .jp-modal { background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(10,15,36,0.98)); border: 1px solid rgba(139,92,246,0.2); border-radius: 24px; padding: 32px; width: 100%; max-width: 480px; animation: jpFadeIn 0.25s ease both; position: relative; overflow: hidden; }
-        .jp-modal::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--modal-accent, linear-gradient(90deg,#8B5CF6,#EC4899)); }
+        .jp-modal { background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(10,15,36,0.98)); border: 1px solid rgba(var(--color-teal-light-rgb),0.2); border-radius: 24px; padding: 32px; width: 100%; max-width: 480px; animation: jpFadeIn 0.25s ease both; position: relative; overflow: hidden; }
+        .jp-modal::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--modal-accent, linear-gradient(90deg,var(--color-teal-light),#EC4899)); }
         .jp-modal h3 { font-size: 1.3rem; font-weight: 800; margin-bottom: 24px; letter-spacing: -0.02em; }
-        .jp-shimmer { background: linear-gradient(90deg, #8B5CF6, #EC4899, #06B6D4, #8B5CF6); background-size: 300% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: jpShimmer 4s linear infinite; }
+        .jp-shimmer { background: linear-gradient(90deg, var(--color-teal-light), #EC4899, #06B6D4, var(--color-teal-light)); background-size: 300% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: jpShimmer 4s linear infinite; }
         @media (max-width: 768px) {
           .jp-sidebar { position: fixed; bottom: 0; left: 0; right: 0; width: 100% !important; min-height: auto !important; height: 64px; flex-direction: row; justify-content: space-around; border-right: none; border-top: 1px solid rgba(255,255,255,0.06); padding: 0 8px; z-index: 100; }
           .jp-sidebar-item { width: 40px; height: 40px; }
@@ -243,7 +243,7 @@ export default function JobPrepPlanner({ onSwitchMode }: { onSwitchMode: () => v
       {/* ── Vertical Sidebar Navigation ── */}
       <nav className="jp-sidebar">
         <div style={{cursor:'pointer',marginBottom:8}} onClick={onSwitchMode}>
-          <div style={{ width: 38, height: 38, borderRadius: 12, background: 'linear-gradient(135deg,#8B5CF6,#EC4899)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(139,92,246,0.4)' }}>
+          <div style={{ width: 38, height: 38, borderRadius: 12, background: 'linear-gradient(135deg,var(--color-teal-light),#EC4899)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(var(--color-teal-light-rgb),0.4)' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
           </div>
         </div>
@@ -262,7 +262,7 @@ export default function JobPrepPlanner({ onSwitchMode }: { onSwitchMode: () => v
           </div>
         ))}
         <div style={{flex:1}}/>
-        <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,rgba(139,92,246,0.15),rgba(236,72,153,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.8rem', color: '#A78BFA', border: '1px solid rgba(139,92,246,0.2)' }}>
+        <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,rgba(var(--color-teal-light-rgb),0.15),rgba(236,72,153,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.8rem', color: '#A78BFA', border: '1px solid rgba(var(--color-teal-light-rgb),0.2)' }}>
           {store.onboarding.goal.charAt(0)}
         </div>
       </nav>
@@ -298,13 +298,13 @@ export default function JobPrepPlanner({ onSwitchMode }: { onSwitchMode: () => v
             {/* Greeting Banner */}
             <div style={{marginBottom:4}}>
               <h2 style={{fontSize:'1.6rem',fontWeight:800,letterSpacing:'-0.02em',marginBottom:6}}>
-                {new Date().getHours() < 12 ? 'Good Morning' : new Date().getHours() < 17 ? 'Good Afternoon' : 'Good Evening'} — let's get you ready for <span style={{background:'linear-gradient(90deg,#8B5CF6,#EC4899)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>{store.onboarding.role}</span> at <span style={{color:'#10B981'}}>{store.onboarding.company}</span>
+                {new Date().getHours() < 12 ? 'Good Morning' : new Date().getHours() < 17 ? 'Good Afternoon' : 'Good Evening'} — let's get you ready for <span style={{background:'linear-gradient(90deg,var(--color-teal-light),#EC4899)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>{store.onboarding.role}</span> at <span style={{color:'#10B981'}}>{store.onboarding.company}</span>
               </h2>
               <p style={{color:'#64748B',fontSize:'0.88rem'}}>{todayTasks.length} task{todayTasks.length!==1?'s':''} on your plate today.</p>
             </div>
 
             <div className="jp-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
-              <div style={{background:'linear-gradient(135deg,#8B5CF6,#6366F1)',borderRadius:16,padding:'22px 24px',position:'relative',overflow:'hidden',boxShadow:'0 8px 32px rgba(139,92,246,0.25)'}}>
+              <div style={{background:'linear-gradient(135deg,var(--color-teal-light),var(--color-teal))',borderRadius:16,padding:'22px 24px',position:'relative',overflow:'hidden',boxShadow:'0 8px 32px rgba(var(--color-teal-light-rgb),0.25)'}}>
                 <div style={{position:'absolute',top:0,right:0,width:80,height:80,borderRadius:'50%',background:'rgba(255,255,255,0.08)',transform:'translate(20px,-20px)'}}/>
                 <div style={{position:'absolute',bottom:-20,left:-20,width:60,height:60,borderRadius:'50%',background:'rgba(236,72,153,0.15)'}}/>
                 <div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.1em',color:'rgba(255,255,255,0.7)',marginBottom:8}}>Overall</div>
@@ -316,7 +316,7 @@ export default function JobPrepPlanner({ onSwitchMode }: { onSwitchMode: () => v
                 <div style={{fontSize:'2rem',fontWeight:900,color:'#E2E8F0'}}>{store.dsaCount}</div>
               </div>
               <div className="jp-stat-card">
-                <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:'#8B5CF6',borderRadius:'20px 20px 0 0'}}/>
+                <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:'var(--color-teal-light)',borderRadius:'20px 20px 0 0'}}/>
                 <div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.1em',color:'#64748B',marginBottom:8}}>Projects Done</div>
                 <div style={{fontSize:'2rem',fontWeight:900,color:'#E2E8F0'}}>{projectDoneCount}</div>
               </div>
@@ -527,12 +527,12 @@ export default function JobPrepPlanner({ onSwitchMode }: { onSwitchMode: () => v
         {activeTab === 'projects' && (
           <div>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:24}}>
-              <div className="jp-section-title"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg> Your Projects</div>
+              <div className="jp-section-title"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-teal-light)" strokeWidth="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg> Your Projects</div>
               <button className="jp-btn" onClick={()=>setShowAddProject(true)}>+ Add Project</button>
             </div>
             {store.projects.length===0 ? (
               <div className="jp-card" style={{textAlign:'center',padding:'60px 24px'}}>
-                <div style={{width:64,height:64,borderRadius:'50%',background:'rgba(139,92,246,0.1)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px'}}><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></div>
+                <div style={{width:64,height:64,borderRadius:'50%',background:'rgba(var(--color-teal-light-rgb),0.1)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px'}}><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--color-teal-light)" strokeWidth="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></div>
                 <p style={{color:'#94A3B8',fontSize:'0.95rem'}}>No projects yet. Start building your portfolio!</p>
               </div>
             ) : (
@@ -550,7 +550,7 @@ export default function JobPrepPlanner({ onSwitchMode }: { onSwitchMode: () => v
                       </div>
                       {p.description && <p style={{color:'#94A3B8',fontSize:'0.82rem',marginBottom:12,lineHeight:1.5}}>{p.description}</p>}
                       <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:12}}>
-                        {p.tags.map((tag,i)=><span key={i} className="jp-badge" style={{background:'rgba(139,92,246,0.1)',color:'#A78BFA',border:'1px solid rgba(139,92,246,0.2)'}}>{tag}</span>)}
+                        {p.tags.map((tag,i)=><span key={i} className="jp-badge" style={{background:'rgba(var(--color-teal-light-rgb),0.1)',color:'#A78BFA',border:'1px solid rgba(var(--color-teal-light-rgb),0.2)'}}>{tag}</span>)}
                       </div>
                       <div style={{display:'flex',gap:8}}>
                         <span className="jp-badge" style={{background:p.complexity==='Easy'?'rgba(16,185,129,0.1)':p.complexity==='Medium'?'rgba(245,158,11,0.1)':'rgba(239,68,68,0.1)',color:p.complexity==='Easy'?'#10B981':p.complexity==='Medium'?'#F59E0B':'#EF4444'}}>{p.complexity}</span>
@@ -573,7 +573,7 @@ export default function JobPrepPlanner({ onSwitchMode }: { onSwitchMode: () => v
             </div>
             <div className="jp-grid" style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:16}}>
               {store.resources.map(r=>{
-                const typeColors:Record<string,string> = {Video:'#EF4444',Article:'#3B82F6',Course:'#8B5CF6',Tool:'#10B981'};
+                const typeColors:Record<string,string> = {Video:'#EF4444',Article:'#3B82F6',Course:'var(--color-teal-light)',Tool:'#10B981'};
                 return (
                   <div key={r.id} className="jp-card" style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                     <div style={{flex:1}}>
@@ -633,7 +633,7 @@ export default function JobPrepPlanner({ onSwitchMode }: { onSwitchMode: () => v
       {/* Add Project Modal */}
       {showAddProject && (
         <div className="jp-modal-overlay" onClick={()=>setShowAddProject(false)}>
-          <div className="jp-modal" style={{'--modal-accent':'linear-gradient(90deg,#8B5CF6,#A78BFA)'} as any} onClick={e=>e.stopPropagation()}>
+          <div className="jp-modal" style={{'--modal-accent':'linear-gradient(90deg,var(--color-teal-light),#A78BFA)'} as any} onClick={e=>e.stopPropagation()}>
             <h3>Add New Project</h3>
             <form onSubmit={e=>{
               e.preventDefault();
@@ -666,7 +666,7 @@ export default function JobPrepPlanner({ onSwitchMode }: { onSwitchMode: () => v
               </div>
               <input name="demo" type="hidden" value="" />
               <div style={{display:'flex',gap:12,marginTop:8}}>
-                <button type="submit" className="jp-btn" style={{flex:1,background:'linear-gradient(135deg,#8B5CF6,#7C3AED)'}}>Create Project</button>
+                <button type="submit" className="jp-btn" style={{flex:1,background:'linear-gradient(135deg,var(--color-teal-light),#7C3AED)'}}>Create Project</button>
                 <button type="button" onClick={()=>setShowAddProject(false)} style={{padding:'12px 20px',borderRadius:12,border:'1px solid rgba(255,255,255,0.1)',background:'transparent',color:'#94A3B8',cursor:'pointer',fontWeight:600,fontSize:'0.88rem'}}>Cancel</button>
               </div>
             </form>
@@ -1022,3 +1022,4 @@ function Onboarding({ onComplete, onCancel }: { onComplete: (data: OnboardingDat
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -10,10 +10,10 @@
   --font: 'Poppins', sans-serif;
 
   /* Brand gradient: purple → blue → cyan */
-  --grad-start: #C36BFF;
+  --grad-start: #087E8B;
   --grad-mid: #4A90FF;
   --grad-end: #28D7FF;
-  --gradient: linear-gradient(90deg, #C36BFF, #4A90FF, #28D7FF);
+  --gradient: linear-gradient(90deg, #087E8B, #4A90FF, #28D7FF);
 
   /* Backgrounds */
   --bg: #08080f;
@@ -30,7 +30,7 @@
 
   /* Borders */
   --border: rgba(255, 255, 255, 0.07);
-  --border-act: rgba(195, 107, 255, 0.4);
+  --border-act: rgba(8, 126, 139, 0.4);
 
   /* Day header tints — all in purple/blue/cyan family */
   --day-mon: #1e1040;
@@ -42,11 +42,11 @@
   --day-sun: #180840;
 
   /* Accent dots — from the gradient */
-  --dot-mon: #C36BFF;
+  --dot-mon: #087E8B;
   --dot-tue: #9e7dff;
   --dot-wed: #4A90FF;
   --dot-thu: #4A90FF;
-  --dot-fri: #C36BFF;
+  --dot-fri: #087E8B;
   --dot-sat: #28D7FF;
   --dot-sun: #9e7dff;
 }
@@ -187,9 +187,9 @@ body {
 }
 
 .habit-checkbox:checked {
-  background: linear-gradient(135deg, #C36BFF, #4A90FF);
-  border-color: #C36BFF;
-  box-shadow: 0 0 10px rgba(195, 107, 255, 0.5), 0 0 4px rgba(74, 144, 255, 0.3);
+  background: linear-gradient(135deg, #087E8B, #4A90FF);
+  border-color: #087E8B;
+  box-shadow: 0 0 10px rgba(8, 126, 139, 0.5), 0 0 4px rgba(74, 144, 255, 0.3);
 }
 
 .habit-checkbox:checked::after {
@@ -205,8 +205,8 @@ body {
 }
 
 .habit-checkbox:hover:not(:checked) {
-  border-color: #C36BFF;
-  box-shadow: 0 0 6px rgba(195, 107, 255, 0.25);
+  border-color: #087E8B;
+  box-shadow: 0 0 6px rgba(8, 126, 139, 0.25);
 }
 
 /* ── Progress bar ── */
@@ -289,7 +289,7 @@ body {
 
 .h-input:focus {
   border-color: var(--grad-start);
-  box-shadow: 0 0 6px rgba(195, 107, 255, 0.15);
+  box-shadow: 0 0 6px rgba(8, 126, 139, 0.15);
 }
 
 .h-input::placeholder {
@@ -729,14 +729,57 @@ video {
   }
 }
 
-/* ── Exam Planner Scoped Theme (Midnight Neon Focus) ── */
-.exam-planner-theme {
-  /* Brand gradient: indigo → pink → cyan */
-  --grad-start:  #6366F1;
-  --grad-mid:    #F472B6;
-  --grad-end:    #22D3EE;
-  --gradient:    linear-gradient(90deg, #6366F1, #F472B6, #22D3EE);
+/* ─
 
+/* ── Exam Planner Scoped Theme (Light - Calm Academic) ── */
+.exam-planner-theme {
+  --font: 'Inter', sans-serif;
+  
+  /* Backgrounds */
+  --bg:          #F3F7F7;
+  --bg-card:     #FFFFFF;
+  --bg-row:      #EAF2F3;
+  --bg-input:    #FFFFFF;
+  --bg-subtle:   rgba(8, 126, 139, 0.04);
+  --bg-hover:    rgba(8, 126, 139, 0.08);
+
+  /* Text */
+  --text:        #102A43;
+  --text-sub:    #627D98;
+  --text-muted:  #829AB1;
+
+  /* Borders */
+  --border:      #D7E4E6;
+  --border-act:  var(--color-teal);
+
+  /* Brand Colors */
+  --color-teal: #087E8B;
+  --color-teal-rgb: 8, 126, 139;
+  --color-teal-light: #159A9C;
+  --color-teal-light-rgb: 21, 154, 156;
+
+  --grad-start:  var(--color-teal);
+  --grad-mid:    var(--color-teal-light);
+  --grad-end:    #075E68;
+  --gradient:    linear-gradient(90deg, var(--color-teal), var(--color-teal-light));
+  
+  /* Semantic Colors */
+  --color-blue: #2878C8;
+  --color-blue-soft: #E6F3FA;
+  --color-green: #4FA477;
+  --color-green-soft: #E8F5EE;
+  --color-amber: #F4A62A;
+  --color-amber-soft: #FFF4DF;
+  --color-red: #D9534F;
+  --color-navy: #102A43;
+
+  /* Sidebar */
+  --sidebar-bg: #102A43; --sidebar-text: #ffffff;
+  --sidebar-muted: #829AB1;
+}
+
+/* ── Exam Planner Scoped Theme (Dark - Midnight Neon) ── */
+.dark-theme .exam-planner-theme {
   /* Backgrounds */
   --bg:          #060A17;
   --bg-card:     #0A0F24;
@@ -752,7 +795,22 @@ video {
 
   /* Borders */
   --border:      rgba(255,255,255,0.08);
-  --border-act:  #6366F1;
+  --border-act:  var(--color-teal);
+
+  /* Brand Colors (Revert to original Purple/Indigo) */
+  --color-teal: #C36BFF;
+  --color-teal-rgb: 195, 107, 255;
+  --color-teal-light: #6366F1;
+  --color-teal-light-rgb: 99, 102, 241;
+
+  --grad-start:  var(--color-teal-light);
+  --grad-mid:    #F472B6;
+  --grad-end:    #22D3EE;
+  --gradient:    linear-gradient(90deg, var(--color-teal-light), #F472B6, #22D3EE);
+
+  /* Sidebar */
+  --sidebar-bg: #0A0F24; --sidebar-text: var(--text);
+  --sidebar-muted: #94A3B8;
 }
 
 /* ── Mobile Layout Optimization Overrides ── */
