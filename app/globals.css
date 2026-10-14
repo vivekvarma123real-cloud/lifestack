@@ -940,3 +940,128 @@ video {
     padding: 10px !important;
   }
 }
+
+
+/* ── Daily Log Mobile Layout Fixes ── */
+.daily-grid-row-1 {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 20px;
+}
+
+.daily-study-controls {
+  display: flex;
+  gap: 40px;
+  margin-bottom: 24px;
+}
+
+.daily-study-stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.daily-dpp-controls {
+  display: flex;
+  gap: 32px;
+}
+
+.daily-grid-row-2 {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 20px;
+}
+
+.daily-reflection-prompts {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.daily-glance-row {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+@media (max-width: 900px) {
+  .daily-grid-row-1 {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  .daily-grid-row-2 {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .global-theme-toggle {
+    top: 10px !important;
+    right: 10px !important;
+    width: 34px !important;
+    height: 34px !important;
+  }
+
+  .ep-header-wrap {
+    padding-right: 48px !important; /* Prevents theme toggle from overlapping text */
+  }
+
+  .daily-top-bar {
+    padding: 10px !important;
+    gap: 10px !important;
+  }
+
+  .daily-top-bar > div:first-child {
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+
+  .daily-study-controls {
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+
+  .daily-study-controls > div:last-child {
+    border-left: none !important;
+    border-top: 1px dashed var(--border) !important;
+    padding-left: 0 !important;
+    padding-top: 14px !important;
+  }
+
+  .daily-study-stats-row {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  .daily-dpp-controls {
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+
+  .daily-dpp-controls > div:first-child {
+    justify-content: center !important;
+  }
+
+  .daily-reflection-prompts {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  .daily-glance-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 16px !important;
+    padding: 16px 14px !important;
+  }
+
+  .daily-glance-row > div:first-child {
+    width: 100% !important;
+  }
+
+  .daily-glance-cards {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+}

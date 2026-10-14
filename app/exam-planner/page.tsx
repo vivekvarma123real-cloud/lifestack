@@ -1679,7 +1679,7 @@ function DailySessionsManager({ store, selDate, todayLog, updateStore }: { store
         </div>
       )}
 
-      <div style={{ flex: 1, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 10 }}>
+      <div style={{ flex: 1, overflowY: "auto", overflowX: "auto", WebkitOverflowScrolling: "touch", border: "1px solid var(--border)", borderRadius: 10 }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "var(--bg)", borderBottom: "1px solid var(--border)" }}>
@@ -3073,15 +3073,15 @@ function CompetitiveExamPlanner({ onSwitchMode }: { onSwitchMode?: () => void })
           <div style={{ animation: "fadeUp 0.4s ease both", display: "flex", flexDirection: "column", gap: 24 }}>
             
             {/* Top Bar: Logging for */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--bg-card)", padding: "12px 20px", borderRadius: 12, border: "1px solid var(--border)", boxShadow: "0 4px 20px rgba(0,0,0,0.02)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <div className="daily-top-bar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, background: "var(--bg-card)", padding: "12px 16px", borderRadius: 12, border: "1px solid var(--border)", boxShadow: "0 4px 20px rgba(0,0,0,0.02)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                 <span style={{ fontWeight: 700, fontSize: "0.95rem", display: "flex", alignItems: "center", gap: 8, color: "var(--text)" }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
                   Logging for:
                 </span>
                 <div style={{ display: "flex", alignItems: "center", border: "1px solid var(--border)", borderRadius: 8 }}>
                   <button onClick={() => { const d = new Date(selDate); d.setDate(d.getDate() - 1); setSelDate(localDateString(d)); }} style={{ padding: "8px 12px", background: "var(--bg-subtle)", border: "none", borderRight: "1px solid var(--border)", cursor: "pointer", color: "var(--text)", fontWeight: 800, borderRadius: "8px 0 0 8px" }}>&lt;</button>
-                  <div style={{ padding: "8px 16px", fontWeight: 700, fontSize: "0.9rem", color: "var(--text)", background: "transparent", minWidth: 160, textAlign: "center" }}>
+                  <div style={{ padding: "8px 16px", fontWeight: 700, fontSize: "0.9rem", color: "var(--text)", background: "transparent", minWidth: 110, flex: 1, textAlign: "center" }}>
                     <CustomDatePicker value={selDate} onChange={setSelDate} bare />
                   </div>
                   <button onClick={() => { const d = new Date(selDate); d.setDate(d.getDate() + 1); setSelDate(localDateString(d)); }} style={{ padding: "8px 12px", background: "var(--bg-subtle)", border: "none", borderLeft: "1px solid var(--border)", cursor: "pointer", color: "var(--text)", fontWeight: 800, borderRadius: "0 8px 8px 0" }}>&gt;</button>
@@ -3093,7 +3093,7 @@ function CompetitiveExamPlanner({ onSwitchMode }: { onSwitchMode?: () => void })
             </div>
 
             {/* ROW 1: Study & DPPs */}
-            <div style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: 20 }}>
+            <div className="daily-grid-row-1">
               
               {/* Today's Study */}
               <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, padding: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.02)" }}>
@@ -3113,7 +3113,7 @@ function CompetitiveExamPlanner({ onSwitchMode }: { onSwitchMode?: () => void })
                   </div>
                 </div>
 
-                <div style={{ display: "flex", gap: 40, marginBottom: 24 }}>
+                <div className="daily-study-controls">
                   <div style={{ display: "flex", gap: 20 }}>
                     <div>
                       <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 700, marginBottom: 8, textAlign: "center" }}>Hours</div>
@@ -3153,7 +3153,7 @@ function CompetitiveExamPlanner({ onSwitchMode }: { onSwitchMode?: () => void })
                   </div>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 20 }}>
+                <div className="daily-study-stats-row">
                   <div style={{ background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px", display: "flex", alignItems: "center", gap: 12 }}>
                     <div style={{ color: "var(--color-teal)" }}><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg></div>
                     <div>
@@ -3200,7 +3200,7 @@ function CompetitiveExamPlanner({ onSwitchMode }: { onSwitchMode?: () => void })
                   </div>
                 </div>
 
-                <div style={{ display: "flex", gap: 32 }}>
+                <div className="daily-dpp-controls">
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <button onClick={() => setDayField("dpps", Math.max(0, todayLog.dpps - 1))} style={{ width: 50, height: 50, borderRadius: 12, border: "1px solid var(--border)", background: "transparent", color: "var(--text)", fontSize: "1.5rem", cursor: "pointer" }}>-</button>
                     <div style={{ fontSize: "3rem", fontWeight: 900, color: "var(--text)", width: 80, textAlign: "center" }}>{todayLog.dpps.toString().padStart(2, '0')}</div>
@@ -3241,7 +3241,7 @@ function CompetitiveExamPlanner({ onSwitchMode }: { onSwitchMode?: () => void })
             </div>
 
             {/* ROW 2: Sessions & Reflection */}
-            <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: 20 }}>
+            <div className="daily-grid-row-2">
               
               <DailySessionsManager store={store} selDate={selDate} todayLog={todayLog} updateStore={updateStore} />
 
@@ -3273,7 +3273,7 @@ function CompetitiveExamPlanner({ onSwitchMode }: { onSwitchMode?: () => void })
                   </div>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+                <div className="daily-reflection-prompts">
                   <div style={{ background: "rgba(var(--color-amber-rgb), 0.08)", border: "1px solid rgba(var(--color-amber-rgb), 0.15)", borderRadius: 10, padding: 12, display: "flex", gap: 10 }}>
                     <div style={{ color: "var(--color-amber)" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="9" y1="18" x2="15" y2="18"></line><line x1="10" y1="22" x2="14" y2="22"></line><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1.45.62 2.84 1.5 3.5.76.76 1.23 1.52 1.41 2.5"></path></svg></div>
                     <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text)", lineHeight: 1.3 }}>What did you learn today?</div>
@@ -3291,7 +3291,7 @@ function CompetitiveExamPlanner({ onSwitchMode }: { onSwitchMode?: () => void })
             </div>
 
             {/* ROW 3: Today at a glance */}
-            <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, padding: "20px 24px", display: "flex", alignItems: "center", gap: 32, boxShadow: "0 4px 20px rgba(0,0,0,0.02)" }}>
+            <div className="daily-glance-row" style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, padding: "20px 24px", boxShadow: "0 4px 20px rgba(0,0,0,0.02)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, width: 220 }}>
                 <div style={{ color: "var(--color-teal)" }}><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 20V10"></path><path d="M12 20V4"></path><path d="M6 20v-6"></path></svg></div>
                 <div>
@@ -3300,7 +3300,7 @@ function CompetitiveExamPlanner({ onSwitchMode }: { onSwitchMode?: () => void })
                 </div>
               </div>
 
-              <div style={{ flex: 1, display: "flex", gap: 16 }}>
+              <div className="daily-glance-cards" style={{ flex: 1, display: "flex", gap: 16 }}>
                 <div style={{ flex: 1, background: "rgba(var(--color-blue-rgb),0.06)", border: "1px solid rgba(var(--color-blue-rgb),0.15)", borderRadius: 12, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
                   <div style={{ color: "var(--color-blue)", background: "var(--bg)", padding: 8, borderRadius: 50, border: "1px solid rgba(var(--color-blue-rgb),0.2)" }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
                   <div>
