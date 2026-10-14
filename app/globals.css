@@ -1065,3 +1065,43 @@ video {
     gap: 10px !important;
   }
 }
+
+
+/* ── Additional Mobile Fixes for Tests Tab and Header ── */
+@media (max-width: 900px) {
+  .ep-tests-form {
+    position: static !important;
+    top: auto !important;
+    padding: 16px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .ep-main-header {
+    position: relative !important;
+    padding: 10px 12px !important;
+  }
+
+  .ep-header-wrap {
+    padding-right: 46px !important;
+  }
+
+  .ep-header-left {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  .ep-header-subinfo {
+    flex-wrap: wrap !important;
+    gap: 4px 8px !important;
+    font-size: 0.62rem !important;
+  }
+
+  .ep-countdown-card {
+    padding: 8px 12px !important;
+    gap: 10px !important;
+    border-radius: 12px !important;
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+}

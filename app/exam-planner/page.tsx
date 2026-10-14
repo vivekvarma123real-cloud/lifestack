@@ -2714,7 +2714,7 @@ function CompetitiveExamPlanner({ onSwitchMode }: { onSwitchMode?: () => void })
 
       <div className="ep-main-wrapper" style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, height: "100vh", overflow: "hidden" }}>
       {/* ── Header ── */}
-      <header style={{ position: "sticky", top: 0, zIndex: 50, padding: "12px 20px 0 20px", background: "var(--bg-card)", backdropFilter: "blur(20px)" }}>
+      <header className="ep-main-header" style={{ position: "sticky", top: 0, zIndex: 50, padding: "12px 20px 0 20px", background: "var(--bg-card)", backdropFilter: "blur(20px)" }}>
         <div className="ep-header-wrap" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <button
@@ -2751,7 +2751,7 @@ function CompetitiveExamPlanner({ onSwitchMode }: { onSwitchMode?: () => void })
                   <span style={{ fontWeight: 900, fontSize: "1.3rem", color: "var(--color-teal)" }}>{store.examName}</span>
                   <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Exam Planner</span>
                 </div>
-              <div style={{ fontSize: "0.68rem", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+              <div className="ep-header-subinfo" style={{ fontSize: "0.68rem", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
                 <span style={{ display: "flex", alignItems: "center", gap: 6 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg> {store.examDate}</span>
                 <span>·</span>
                 <span style={{ display: "flex", alignItems: "center", gap: 6 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg> {store.targetHours}h/day target</span>
@@ -3340,7 +3340,7 @@ function CompetitiveExamPlanner({ onSwitchMode }: { onSwitchMode?: () => void })
             <div className="ep-grid-sidebar">
 
               {/* Log Form */}
-              <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 14, padding: 24, position: "sticky", top: 140 }}>
+              <div className="ep-tests-form" style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 14, padding: 24, position: "sticky", top: 140 }}>
                 <div style={{ fontWeight: 800, fontSize: "1rem", marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg> Log a Test Score</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   <div>
