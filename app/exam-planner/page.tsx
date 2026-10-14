@@ -2413,6 +2413,7 @@ function CompetitiveExamPlanner({ onSwitchMode }: { onSwitchMode?: () => void })
 
   // Plan state
   const [planView, setPlanView] = useState<"daily" | "weekly" | "monthly">("weekly");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showAddDaily, setShowAddDaily] = useState(false);
   const [dpDate, setDpDate] = useState(today());
   const [showAddWeek, setShowAddWeek] = useState(false);
@@ -2659,21 +2660,41 @@ function CompetitiveExamPlanner({ onSwitchMode }: { onSwitchMode?: () => void })
         }
       `}</style>
 
+      {/* SIDEBAR BACKDROP FOR MOBILE */}
+      {mobileMenuOpen && (
+        <div
+          onClick={() => setMobileMenuOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.65)",
+            backdropFilter: "blur(4px)",
+            WebkitBackdropFilter: "blur(4px)",
+            zIndex: 9998,
+          }}
+        />
+      )}
+
       {/* SIDEBAR */}
-      <aside className="desktop-sidebar" style={{ width: 240, background: "var(--sidebar-bg)", height: "100vh", display: "flex", flexDirection: "column", flexShrink: 0, padding: "24px 16px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 40, padding: "0 8px" }}>
-          <img src="/icons/icon-192.png" alt="LifeStack Logo" style={{ width: 32, height: 32, borderRadius: 8 }} />
-          <div>
-            <div style={{ fontWeight: 900, fontSize: "1.1rem", color: "var(--sidebar-text)", lineHeight: 1.1 }}>{store.examName}</div>
-            <div style={{ fontSize: "0.65rem", color: "var(--sidebar-muted)", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Planner</div>
+      <aside className={`ep-sidebar ${mobileMenuOpen ? "open" : ""}`} style={{ width: 240, background: "var(--sidebar-bg)", height: "100vh", display: "flex", flexDirection: "column", flexShrink: 0, padding: "24px 16px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 32, padding: "0 8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <img src="/icons/icon-192.png" alt="LifeStack Logo" style={{ width: 32, height: 32, borderRadius: 8 }} />
+            <div>
+              <div style={{ fontWeight: 900, fontSize: "1.1rem", color: "var(--sidebar-text)", lineHeight: 1.1 }}>{store.examName}</div>
+              <div style={{ fontSize: "0.65rem", color: "var(--sidebar-muted)", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Planner</div>
+            </div>
           </div>
+          <button onClick={() => setMobileMenuOpen(false)} className="ep-close-drawer-btn" style={{ background: "rgba(255, 255, 255, 0.08)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--sidebar-text)", cursor: "pointer", padding: "6px", display: "none", alignItems: "center", justifyContent: "center" }} aria-label="Close menu">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
         </div>
 
         <nav style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
           {tabs.map(t => {
             const isActive = activeTab === t.id;
             return (
-              <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
+              <button key={t.id} onClick={() => { setActiveTab(t.id); setMobileMenuOpen(false); }} style={{
                 display: "flex", alignItems: "center", gap: 12, background: isActive ? "var(--bg-hover)" : "transparent",
                 border: "none", borderRadius: 8, padding: "12px 16px", cursor: "pointer", transition: "all 0.2s",
                 color: isActive ? "var(--sidebar-text)" : "var(--sidebar-muted)", fontWeight: isActive ? 700 : 600, fontSize: "0.85rem", textAlign: "left"
@@ -2691,11 +2712,33 @@ function CompetitiveExamPlanner({ onSwitchMode }: { onSwitchMode?: () => void })
         </div>
       </aside>
 
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <div className="ep-main-wrapper" style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, height: "100vh", overflow: "hidden" }}>
       {/* ── Header ── */}
       <header style={{ position: "sticky", top: 0, zIndex: 50, padding: "12px 20px 0 20px", background: "var(--bg-card)", backdropFilter: "blur(20px)" }}>
         <div className="ep-header-wrap" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="ep-hamburger-btn"
+              style={{
+                background: "var(--bg-subtle)",
+                border: "1px solid var(--border)",
+                borderRadius: 8,
+                color: "var(--text)",
+                padding: "6px 10px",
+                cursor: "pointer",
+                display: "none",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              aria-label="Open menu"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+              </svg>
+            </button>
             <button onClick={() => router.push("/choose")} style={{ background: "none", border: "1px solid var(--border)", borderRadius: 7, color: "var(--text-muted)", padding: "5px 12px", cursor: "pointer", fontFamily: "var(--font)", fontSize: "0.72rem", fontWeight: 600, transition: "all 0.18s" }}
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--color-teal)"; (e.currentTarget as HTMLElement).style.color = "var(--color-teal)"; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--border)"; (e.currentTarget as HTMLElement).style.color = "var(--text-muted)"; }}>
@@ -2735,7 +2778,7 @@ function CompetitiveExamPlanner({ onSwitchMode }: { onSwitchMode?: () => void })
 
       </header>
 
-      <main style={{ flex: 1, padding: "24px 32px", overflowY: "auto" }}>
+      <main className="ep-main-content" style={{ flex: 1, padding: "24px 32px", overflowY: "auto" }}>
 
         {/* ── DASHBOARD ── */}
         {activeTab === "dashboard" && (

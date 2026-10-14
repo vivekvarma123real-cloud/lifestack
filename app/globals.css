@@ -877,3 +877,66 @@ video {
 .winter-arc-banner {
   animation: winter-pulse 3s ease-in-out infinite;
 }
+
+
+/* ── Exam Planner Full Mobile Responsiveness ── */
+@media (max-width: 768px) {
+  /* Show hamburger button on mobile */
+  .ep-hamburger-btn {
+    display: flex !important;
+  }
+  
+  /* Show close drawer button on mobile */
+  .ep-close-drawer-btn {
+    display: flex !important;
+  }
+
+  /* Make sidebar a fixed slide-out drawer on mobile */
+  .ep-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    width: 280px !important;
+    max-width: 85vw !important;
+    height: 100vh !important;
+    z-index: 9999 !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: none !important;
+  }
+  
+  .ep-sidebar.open {
+    transform: translateX(0) !important;
+    box-shadow: 12px 0 40px rgba(0, 0, 0, 0.7) !important;
+  }
+
+  .ep-main-wrapper {
+    width: 100vw !important;
+    min-width: 0 !important;
+  }
+
+  /* Header mobile adjustments */
+  .ep-header-wrap {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .ep-header-actions {
+    margin-right: 0 !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+  }
+
+  /* Main content padding on mobile */
+  .ep-main-content {
+    padding: 16px 12px 80px 12px !important;
+  }
+
+  /* Stats grid on mobile */
+  .ep-stat {
+    padding: 10px !important;
+  }
+}
