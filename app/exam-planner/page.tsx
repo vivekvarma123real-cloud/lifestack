@@ -320,7 +320,7 @@ function WeeklyBarChart({ logs, dates }: { logs: DailyLog[]; dates: Date[] }) {
           <g key={i}>
             <rect x={x - barW / 2} y={PT} width={barW} height={gH} fill="var(--bg-subtle)" rx="5" />
             {barH > 0 && <rect x={x - barW / 2} y={barY} width={barW} height={barH} fill="url(#wbg)" rx="5" opacity={isToday ? 1 : 0.7} />}
-            {d.hours > 0 && <text x={x} y={barY - 5} fill="var(--color-teal)" fontSize="10" fontWeight="700" textAnchor="middle" fontFamily="var(--font)">{d.hours}h</text>}
+            {d.hours > 0 && <text x={x} y={barY - 5} fill="var(--color-teal)" fontSize="10" fontWeight="700" textAnchor="middle" fontFamily="var(--font)">{parseFloat(d.hours.toFixed(1))}h</text>}
             <text x={x} y={H - 8} fill={isToday ? "var(--color-teal)" : "var(--text-sub)"} fontSize="10" fontWeight={isToday ? "700" : "400"} textAnchor="middle" fontFamily="var(--font)">{d.label}</text>
           </g>
         );
@@ -444,7 +444,7 @@ function HeatMapChart({ logs }: { logs: DailyLog[] }) {
                 setTimeout(() => setTooltip(null), 2000);
               }}
             >
-              <title>{d.date}: {d.hours}h</title>
+              <title>{d.date}: {parseFloat(d.hours.toFixed(1))}h</title>
             </rect>
           );
         })}
@@ -2144,15 +2144,15 @@ function PlannerTabManager({ store, selDate, updateStore, setSelDate, todayLog, 
               </div>
               <div style={{ flex: 1, minWidth: 150, border: "1px solid var(--border)", borderRadius: 12, padding: "16px", display: "flex", alignItems: "center", gap: 16 }}>
                 <div style={{ color: "var(--color-blue)" }}><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg></div>
-                <div><div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>Planned</div><div style={{ fontSize: "1.3rem", fontWeight: 900, color: "var(--text)" }}>{weekPlannedHrs}h</div></div>
+                <div><div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>Planned</div><div style={{ fontSize: "1.3rem", fontWeight: 900, color: "var(--text)" }}>{parseFloat(weekPlannedHrs.toFixed(1))}h</div></div>
               </div>
               <div style={{ flex: 1, minWidth: 150, border: "1px solid var(--border)", borderRadius: 12, padding: "16px", display: "flex", alignItems: "center", gap: 16 }}>
                 <div style={{ color: "var(--color-teal)" }}><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div>
-                <div><div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>Completed</div><div style={{ fontSize: "1.3rem", fontWeight: 900, color: "var(--text)" }}>{weekCompletedHrs}h</div></div>
+                <div><div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>Completed</div><div style={{ fontSize: "1.3rem", fontWeight: 900, color: "var(--text)" }}>{parseFloat(weekCompletedHrs.toFixed(1))}h</div></div>
               </div>
               <div style={{ flex: 1, minWidth: 150, border: "1px solid var(--border)", borderRadius: 12, padding: "16px", display: "flex", alignItems: "center", gap: 16 }}>
                 <div style={{ color: "var(--color-amber)" }}><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div>
-                <div><div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>Remaining</div><div style={{ fontSize: "1.3rem", fontWeight: 900, color: "var(--text)" }}>{weekRemainingHrs}h</div></div>
+                <div><div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>Remaining</div><div style={{ fontSize: "1.3rem", fontWeight: 900, color: "var(--text)" }}>{parseFloat(weekRemainingHrs.toFixed(1))}h</div></div>
               </div>
             </div>
 
@@ -2162,7 +2162,7 @@ function PlannerTabManager({ store, selDate, updateStore, setSelDate, todayLog, 
                   <div key={i} style={{ padding: "16px 12px", textAlign: "center", borderRight: i < 6 ? "1px solid var(--border)" : "none" }}>
                     <div style={{ fontWeight: 800, fontSize: "0.95rem", color: "var(--text)" }}>{d.dayName}</div>
                     <div style={{ fontSize: "0.75rem", color: "var(--text-sub)", fontWeight: 600, marginTop: 4 }}>{d.dateFormatted}</div>
-                    <div style={{ fontSize: "0.7rem", color: "var(--color-teal)", fontWeight: 700, marginTop: 4 }}>{d.plannedHrs}h planned</div>
+                    <div style={{ fontSize: "0.7rem", color: "var(--color-teal)", fontWeight: 700, marginTop: 4 }}>{parseFloat(d.plannedHrs.toFixed(1))}h planned</div>
                   </div>
                 ))}
               </div>
@@ -2176,7 +2176,7 @@ function PlannerTabManager({ store, selDate, updateStore, setSelDate, todayLog, 
                         <div key={j} style={{ background: `${color}15`, border: `1px solid ${color}40`, borderRadius: 8, padding: "10px", color: color, position: "relative" }}>
                           <button onClick={() => delSession(d.dateStr, b.id)} style={{ position: "absolute", top: 4, right: 4, background: "none", border: "none", color: "currentColor", opacity: 0.5, cursor: "pointer", fontSize: "0.7rem" }}>&times;</button>
                           <div style={{ fontSize: "0.75rem", fontWeight: 800, marginBottom: 2 }}>{sub?.name || "General"}</div>
-                          <div style={{ fontSize: "0.7rem", fontWeight: 600, opacity: 0.9 }}>{b.topic || "Study"} ({b.durationHrs}h)</div>
+                          <div style={{ fontSize: "0.7rem", fontWeight: 600, opacity: 0.9 }}>{b.topic || "Study"} ({parseFloat(Number(b.durationHrs || 0).toFixed(1))}h)</div>
                         </div>
                       )
                     })}
