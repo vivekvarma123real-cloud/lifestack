@@ -2556,7 +2556,8 @@ function CompetitiveExamPlanner({ onSwitchMode }: { onSwitchMode?: () => void })
   }, 0);
   const selectedMonthHours = selectedMonthLogs.reduce((sum, l) => sum + l.hours, 0);
   const monthlyWeekHours = dashWeeks.map(week => week.reduce((sum, d) => sum + (store.dailyLogs.find(l => l.date === dateKey(d))?.hours || 0), 0));
-  const avgDailyHrs = selectedMonthLogs.length ? (selectedMonthHours / selectedMonthLogs.length).toFixed(1) : "0.0";
+  const daysInSelectedMonth = new Date(activeDashYear, activeDashMonth + 1, 0).getDate();
+  const avgDailyHrs = daysInSelectedMonth > 0 ? (selectedMonthHours / daysInSelectedMonth).toFixed(1) : "0.0";
   const totalChaps = store.subjects.reduce((a, s) => a + s.chapters.length, 0);
   const doneChaps = store.subjects.reduce((a, s) => a + s.chapters.filter(c => c.done).length, 0);
   const sylPct = totalChaps === 0 ? 0 : Math.round((doneChaps / totalChaps) * 100);
