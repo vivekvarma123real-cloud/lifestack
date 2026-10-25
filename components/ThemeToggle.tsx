@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 export default function ThemeToggle() {
+  const pathname = usePathname();
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [mounted, setMounted] = useState(false);
 
@@ -33,6 +35,9 @@ export default function ThemeToggle() {
   };
 
   if (!mounted) return null;
+
+  // Hide on landing page and choose-system page (no theme switching on those pages)
+  if (pathname === "/" || pathname === "/choose") return null;
 
   return (
     <button
